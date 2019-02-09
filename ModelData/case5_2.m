@@ -1,4 +1,4 @@
-function mpc = case5
+function mpc = case5_2
 %CASE5  Power flow data for modified 5 bus, 5 gen case based on PJM 5-bus system
 %   Please see CASEFORMAT for details on the case file format.
 %
