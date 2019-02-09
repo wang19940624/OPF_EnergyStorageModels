@@ -21,7 +21,7 @@ mpc.baseMVA = 100;
 %% bus data
 %	bus_i	type	Pd	Qd	Gs	Bs	area	Vm	Va	baseKV	zone	Vmax	Vmin
 mpc.bus = [
-	1	2	0	0	0	0	1	1	0	230	1	1.1	0.9;
+	1	2	100	0	0	0	1	1	0	230	1	1.1	0.9;
 	2	1	300	98.61	0	0	1	1	0	230	1	1.1	0.9;
 	3	2	300	98.61	0	0	1	1	0	230	1	1.1	0.9;
 	4	3	400	131.47	0	0	1	1	0	230	1	1.1	0.9;
