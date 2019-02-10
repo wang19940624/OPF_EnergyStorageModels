@@ -1,15 +1,5 @@
-function mpc = case5_2
-%CASE5  Power flow data for modified 5 bus, 5 gen case based on PJM 5-bus system
-%   Please see CASEFORMAT for details on the case file format.
-%
-%   Based on data from ...
-%     F.Li and R.Bo, "Small Test Systems for Power System Economic Studies",
-%     Proceedings of the 2010 IEEE Power & Energy Society General Meeting
-
-%   Created by Rui Bo in 2006, modified in 2010, 2014.
-%   Distributed with permission.
-
-%   MATPOWER
+function mpc = case5_5
+%CASE5_5
 
 %% MATPOWER Case Format : Version 2
 mpc.version = '2';
@@ -22,10 +12,10 @@ mpc.baseMVA = 100;
 %	bus_i	type	Pd	Qd	Gs	Bs	area	Vm	Va	baseKV	zone	Vmax	Vmin
 mpc.bus = [
 	1	2	0	0	0	0	1	1	0	230	1	1.1	0.9;
-	2	1	100	98.61	0	0	1	1	0	230	1	1.1	0.9;
+	2	1	300	98.61	0	0	1	1	0	230	1	1.1	0.9;
 	3	2	300	98.61	0	0	1	1	0	230	1	1.1	0.9;
 	4	3	400	131.47	0	0	1	1	0	230	1	1.1	0.9;
-	5	2	600	0	0	0	1	1	0	230	1	1.1	0.9;
+	5	2	0	0	0	0	1	1	0	230	1	1.1	0.9;
 ];
 
 %% generator data
