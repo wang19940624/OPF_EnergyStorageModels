@@ -3,10 +3,10 @@ using PowerModels
 using Ipopt
 using JuMP
 
-#function build_mn_data(base_data; replicates::Int=2)
-#    mp_data = PowerModels.parse_file(base_data)
-#    return PowerModels.replicate(mp_data, replicates)
-#end
+path = "./ModelData/"
+key = "case5_"
+file_ext = ".m"
+
 
 # Instancate a Solver
 #--------------------
@@ -18,32 +18,44 @@ nlp_solver = IpoptSolver(print_level=0)
 # Load System Data
 # ----------------
 
-if VERSION < v"0.7.0"
-    powermodels_path = Pkg.dir("PowerModels")
-else
-    powermodels_path = joinpath(dirname(pathof(PowerModels)), "..")
+
+periods = 0
+for (root, dirs, files) in walkdir(path)
+    for file in files
+        if occursin(key, file)
+            println(file)
+            global periods=periods+1
+        end
+    end
 end
 
-file_name = "ModelData/case5"
-file_ext = ".m"
-periods = 2
-# note: change this string to modify the network data that will be loaded
+#mp_data=[]
 
-# load network data
-base_data = PowerModels.parse_file(string(file_name,"_",1,file_ext))
+for i=1:periods
+    if i == 1
+        data_1 = PowerModels.parse_file(string(path,key,i,file_ext))
 
-# clean load data
-for i in keys(base_data["bus"])
-    base_data["load"][i] = base_data["load"]["1"]
+        global mp_data = Dict{String,Any}(
+            "name" => "$(data_1["name"])",
+            "multinetwork" => true,
+            "per_unit" => data_1["per_unit"],
+            "baseMVA" => data_1["baseMVA"],
+            "nw" => Dict{String,Any}()
+        )
+
+        delete!(data_1, "multinetwork")
+        delete!(data_1, "per_unit")
+        delete!(data_1, "baseMVA")
+        global mp_data["nw"]["$(i)"] = data_1
+
+    else
+        data_2 = PowerModels.parse_file(string(path,key,i,file_ext))
+        delete!(data_2, "multinetwork")
+        delete!(data_2, "per_unit")
+        delete!(data_2, "baseMVA")
+        global mp_data["nw"]["$(i)"] = data_2
+    end
 end
-
-# create multi-network replicates
-mp_data = PowerModels.replicate(base_data, periods)
-
-#data
-#data = build_mn_data(string(file_name,"_",1,file_ext),replicates = periods)
-
-
 
 # Add zeros to turn linear objective functions into quadratic ones
 # so that additional parameter checks are not required
@@ -122,6 +134,7 @@ end
 
 # Solve the optimization problem
 status = solve(model)
+println(status)
 
 # Check the value of the objective function
 cost = getobjectivevalue(model)
@@ -133,7 +146,7 @@ println("The cost of generation is $(cost).")
 println("The active power generated at  each generator is:")
 for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
      #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
-     println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])) p.u.")
+     println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*mp_data["baseMVA"]) MW")
 end
 
 # note: the optimization model is in per unit, so the baseMVA value is used to restore the physical units
