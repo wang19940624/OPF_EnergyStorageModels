@@ -84,6 +84,10 @@ model = Model(solver = nlp_solver)
 @variable(model, ref[:nw][t][:gen][i]["pmin"] <= pg[t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])] <= ref[:nw][t][:gen][i]["pmax"])
 # Add power flow variables for branches
 @variable(model, -ref[:nw][t][:branch][l]["rate_a"] <= p[t in keys(ref[:nw]), (l,i,j) in ref[:nw][t][:arcs]] <= ref[:nw][t][:branch][l]["rate_a"])
+# Add storage power variables
+@variable(model, -ref[:nw][t][:storage][i]["discharge_rating"] <= ps[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["discharge_rating"] )
+@variable(model, 0 <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+
 
 # Add Objective Function
 # ----------------------
@@ -102,12 +106,14 @@ for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
     # Build a list of the loads and shunt elements connected to the bus i
     bus_loads = [ref[:nw][t][:load][l] for l in ref[:nw][t][:bus_loads][i]]
     bus_shunts = [ref[:nw][t][:shunt][s] for s in ref[:nw][t][:bus_shunts][i]]
+    #bus_storage = [ref[:nw][t][:storage][e] for e in ref[:nw][t][:bus_storage][i]]
 
     # Power balance
     @constraint(model,
         sum(p[t,a] for a in ref[:nw][t][:bus_arcs][i]) == # sum of power flow on lines from bus i
         sum(pg[t,g] for g in ref[:nw][t][:bus_gens][i]) - # sum of power generation at bus i
-        sum(load["pd"] for load in bus_loads)   # sum of active load consumption at bus i
+        sum(load["pd"] for load in bus_loads) + # sum of active load consumption at bus i
+        sum(ps[t,e] for e in ref[:nw][t][:bus_storage][i])
     )
 end
 
@@ -126,6 +132,29 @@ for t in keys(ref[:nw]), (i, branch) in ref[:nw][t][:branch]
      @constraint( model, p_fr + p_to == 0)
 
 end
+
+# Storage Energy Balance Constraints
+for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
+    if t == 1
+        # Initial Energy Constraint
+        for e in ref[:nw][t][:bus_storage][i]
+            @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ps[t,e]*ref[:nw][t][:time_elapsed])
+        end
+
+    else
+        # Energy Balance Constraint
+        for e in ref[:nw][t][:bus_storage][i]
+            @constraint(model, es[t,e] == es[t-1,e] - ps[t,e]*ref[:nw][t][:time_elapsed])
+        end
+    end
+    if t == length(keys(ref[:nw]))
+        # Final energy must equal initial energy
+        for e in ref[:nw][t][:bus_storage][i]
+            @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"])
+        end
+    end
+end
+
 
 
 ###############################################################################
@@ -148,5 +177,21 @@ for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
      #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
      println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*mp_data["baseMVA"]) MW")
 end
+
+for t in keys(ref[:nw])
+     #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
+     println("\nIn timestep $(t), $(sum(getvalue(pg[t,i])*mp_data["baseMVA"] for i in keys(ref[:nw][t][:gen]))) MW is generated")
+end
+println("\nThe active power at each storage system is:")
+for t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])
+     #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
+     println("In timestep $(t), storage system $(i) stores $(-getvalue(ps[t,i])) p.u.")
+end
+println("\nThe energy stored at each storage system is:")
+for t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])
+     #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
+     println("In timestep $(t), storage system $(i) stores $(getvalue(es[t,i])*mp_data["baseMVA"]) MWh")
+end
+
 
 # note: the optimization model is in per unit, so the baseMVA value is used to restore the physical units
