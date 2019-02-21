@@ -4,7 +4,7 @@ using Ipopt
 using JuMP
 
 path = "./ModelData/"
-key = "case5_strg_"
+key = "case5_storage_"
 file_ext = ".m"
 
 
