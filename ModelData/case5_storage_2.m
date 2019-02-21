@@ -44,17 +44,17 @@ mpc.branch = [
 %	1	startup	shutdown	n	x1	y1	...	xn	yn
 %	2	startup	shutdown	n	c(n-1)	...	c0
 mpc.gencost = [
-	2	0	0	2	14	0;
-	2	0	0	2	15	0;
-	2	0	0	2	30	0;
-	2	0	0	2	40	0;
-	2	0	0	2	10	0;
+	2	0	0	3	5	100	0;
+	2	0	0	3	5	100	0;
+	2	0	0	3	6	100	0;
+	2	0	0	3	5	100	0;
+	2	0	0	3	6	100	0;
 ];
      %% storage data
  % hours;
 mpc.time_elapsed = 1.0
 %   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status
 mpc.storage = [
-	 3	 20.0	 100.0	 50.0	 70.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;
-	 1	 30.0	 100.0	 50.0	 70.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;
+	 3	 20.0	 1000.0	 500.0	 700.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;
+	 1	 30.0	 1000.0	 500.0	 700.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;
 ];
