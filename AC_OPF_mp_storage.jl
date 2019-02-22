@@ -199,13 +199,13 @@ for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
     if t == 1
         # Initial Energy Constraint
         for e in ref[:nw][t][:bus_storage][i]
-            @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+            @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]*(1-ref[:nw][t][:storage][e]["standby_loss"]) - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
         end
 
     else
         # Energy Balance Constraint
         for e in ref[:nw][t][:bus_storage][i]
-            @constraint(model, es[t,e] == es[t-1,e] - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+            @constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"]) - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
         end
     end
     if t == length(keys(ref[:nw]))
@@ -234,22 +234,22 @@ println("The cost of generation is $(cost).")
 # Example: Active power generated at generator 1
 
 println("The active power generated at  each generator is:")
-for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
-     #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
+for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:gen])))
      println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*mp_data["baseMVA"]) MW")
 end
 
-for t in keys(ref[:nw])
+println("\n The active power generated at each time-step is")
+for t in sort(collect(keys(ref[:nw])))
      #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
-     println("\nIn timestep $(t), $(sum(getvalue(pg[t,i])*mp_data["baseMVA"] for i in keys(ref[:nw][t][:gen]))) MW is generated")
+     println("In timestep $(t), $(sum(getvalue(pg[t,i])*mp_data["baseMVA"] for i in keys(ref[:nw][t][:gen]))) MW is generated")
 end
 println("\nThe active power at each storage system is:")
-for t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])
+for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:storage])))
      #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
      println("In timestep $(t), storage system $(i) stores $(-getvalue(ps[t,i])) p.u.")
 end
 println("\nThe energy stored at each storage system is:")
-for t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])
+for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:storage])))
      #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*ref[:nw][t][:baseMVA]) p.u. (not MW_.")
      println("In timestep $(t), storage system $(i) stores $(getvalue(es[t,i])*mp_data["baseMVA"]) MWh")
 end

@@ -1,5 +1,5 @@
-function mpc = case5_storage_3
-%CASE5_STORAGE_3
+function mpc = case5_storage_11
+%CASE5_STORAGE_11
 
 %% MATPOWER Case Format : Version 2
 mpc.version = '2';
