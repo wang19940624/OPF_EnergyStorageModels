@@ -8,7 +8,10 @@ base_model  = case_ieee123();
 fname = 'ModelData/case_ieee123_storage_';
 
 % number of periods
-periods = 1000;
+periods = 288;
+
+% storage elements
+storageElements = 1;
 
 % changes for each period
 modifier = struct();
@@ -144,10 +147,11 @@ fields = {'bus', 'gen', 'gencost', 'branch', 'storage'};
 	55	1	0.020	0.010	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 	56	3	0.000	0.000	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 ];
-     for i =1:25
+     modifier.period(1).bus = bus;
+     for i =2:periods
          modifier.period(i).bus = bus;
-         modifier.period(i).bus(:,3) = modifier.period(i).bus(:,3)*(5-5*rand());
-         modifier.period(i).bus(:,4) = modifier.period(i).bus(:,4)*(5-5*rand());
+         modifier.period(i).bus(:,3) = modifier.period(i-1).bus(:,3)*(1+(0.05-.1*rand()));
+         modifier.period(i).bus(:,4) = modifier.period(i-1).bus(:,4)*(1+(0.05-.1*rand()));
      end
 
 
@@ -169,39 +173,49 @@ for i=1:periods
     display("Saving file: " + output + ".m");
     savecase(output, temp);
     
-%     % Append storage information to end of file
-%     storage(1) ="     %% storage data";
-%     storage(2) =" % hours;";
-%     storage(3) ="mpc.time_elapsed = 1.0";
-%     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
-%     storage(5) ="mpc.storage = [";
-%     storage(6) ="	 3	 20.0	 500.0	 200.0	100.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(7) ="	 1	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(8) ="	 2	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(9) ="	 7	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(10) ="	 4	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(11) ="	 9	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(12) ="	 10	 30.0	 800.0	 200.0	100.0	 0.9	 0.8	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;";
-%     storage(13) ="];";
-
-storageElements = 56;
-% Append storage information to end of file
+    % Append storage information to end of file
     storage(1) ="     %% storage data";
     storage(2) =" % hours;";
-    storage(3) ="mpc.time_elapsed = 1.0";
+    storage(3) ="mpc.time_elapsed = 0.0833";
     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
     storage(5) ="mpc.storage = [";
+    % Flywheel
+    storage(6) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(7) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(8) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(9) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(10) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(11) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
     
-    for j=1:storageElements
-        storage(5+j) = strcat("  ",num2str(j)," 0.10	 1.0	 1.0	1.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;");
-    end
-    storage(6+storageElements) ="];";
-    
+    %
+    storage(12) ="];";
+
     fid = fopen(strcat(output,".m"), 'at');    
     for k =1:length(storage)
         fprintf(fid,'%s\n',storage(k));
     end 
     fclose(fid);
+
+
+% % Append storage information to end of file
+%     storage(1) ="     %% storage data";
+%     storage(2) =" % hours;";
+%     storage(3) ="mpc.time_elapsed = 1.0";
+%     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
+%     storage(5) ="mpc.storage = [";
+%     
+%     for j=1:storageElements
+%         storage(5+j) = strcat("  ",num2str(j)," 0.10	 1.0	 1.0	1.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;");
+%     end
+%     storage(6+storageElements) ="];";
+%     
+%     fid = fopen(strcat(output,".m"), 'at');    
+%     for k =1:length(storage)
+%         fprintf(fid,'%s\n',storage(k));
+%     end 
+%     fclose(fid);
+
+
 end
 
 

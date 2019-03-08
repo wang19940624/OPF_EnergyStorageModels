@@ -254,5 +254,9 @@ for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:stor
      println("In timestep $(t), storage system $(i) stores $(getvalue(es[t,i])*mp_data["baseMVA"]) MWh")
 end
 
-
 # note: the optimization model is in per unit, so the baseMVA value is used to restore the physical units
+
+plotGeneration(ref);
+plotSoC(ref);
+plotStoragePower(ref)
+plotDemand(ref)
