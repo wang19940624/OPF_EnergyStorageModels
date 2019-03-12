@@ -8,7 +8,7 @@ base_model  = case_ieee123();
 fname = 'ModelData/case_ieee123_storage_';
 
 % number of periods
-periods = 288;
+periods = 10;
 
 % storage elements
 storageElements = 1;
@@ -77,17 +77,17 @@ fields = {'bus', 'gen', 'gencost', 'branch', 'storage'};
 % 	55	1	0.020	0.010	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 % 	56	3	0.000	0.000	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 % ];
-%     
+%
 %     High_power = Low_power;
 %     High_power(:,3) = High_power(:,3)*5;
-%    
+%
 %     for i =1:25
 %         modifier.period(i).bus = Low_power;
 %     end
 %     for i = 26:50
 %         modifier.period(i).bus = High_power;
 %     end
-  
+
 %	bus_i	type	Pd	Qd	Gs	Bs	area	Vm	Va	baseKV	zone	Vmax	Vmin
     bus = [
 	1	1	0.160	0.080	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
@@ -147,11 +147,22 @@ fields = {'bus', 'gen', 'gencost', 'branch', 'storage'};
 	55	1	0.020	0.010	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 	56	3	0.000	0.000	0.000	0.000	1	1	0	4.16	1	1.2	0.8	;
 ];
+                                                                        % Change ramp rate here
+%  bus	Pg	Qg	Qmax	Qmin	Vg	mBase	status	Pmax	Pmin	Pc1	Pc2	Qc1min	Qc1max	Qc2min	Qc2max	ramp_agc	ramp_10	ramp_30	ramp_q	apf
+gen = [
+	56	0	0	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
+];
+     rng(0)
      modifier.period(1).bus = bus;
      for i =2:periods
          modifier.period(i).bus = bus;
-         modifier.period(i).bus(:,3) = modifier.period(i-1).bus(:,3)*(1+(0.05-.1*rand()));
-         modifier.period(i).bus(:,4) = modifier.period(i-1).bus(:,4)*(1+(0.05-.1*rand()));
+         modifier.period(i).bus(:,3) = max(modifier.period(i-1).bus(:,3)*(1+(0.05-.1*rand())),0);
+         modifier.period(i).bus(:,4) = max(modifier.period(i-1).bus(:,4)*(1+(0.05-.1*rand())),0);
+     end
+
+     for i =1:periods
+         modifier.period(i).gen = gen;
+         modifier.period(i).gen(:,17) = .001;
      end
 
 
@@ -165,14 +176,14 @@ for i=1:periods
                     if ~isempty(modifier.period(i).(fields{j}))
                         temp.(fields{j}) = modifier.period(i).(fields{j});
                     end
-                end            
+                end
             end
         end
     end
     output = strcat(fname,num2str(i));
     display("Saving file: " + output + ".m");
     savecase(output, temp);
-    
+
     % Append storage information to end of file
     storage(1) ="     %% storage data";
     storage(2) =" % hours;";
@@ -186,14 +197,14 @@ for i=1:periods
     storage(9) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
     storage(10) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
     storage(11) ="	 11            0.0      0.1          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
-    
+
     %
     storage(12) ="];";
 
-    fid = fopen(strcat(output,".m"), 'at');    
+    fid = fopen(strcat(output,".m"), 'at');
     for k =1:length(storage)
         fprintf(fid,'%s\n',storage(k));
-    end 
+    end
     fclose(fid);
 
 
@@ -203,16 +214,16 @@ for i=1:periods
 %     storage(3) ="mpc.time_elapsed = 1.0";
 %     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
 %     storage(5) ="mpc.storage = [";
-%     
+%
 %     for j=1:storageElements
 %         storage(5+j) = strcat("  ",num2str(j)," 0.10	 1.0	 1.0	1.0	 0.8	 0.9	 100.0	 -50.0	 70.0	 0.1	 0.0	 0.0	 1;");
 %     end
 %     storage(6+storageElements) ="];";
-%     
-%     fid = fopen(strcat(output,".m"), 'at');    
+%
+%     fid = fopen(strcat(output,".m"), 'at');
 %     for k =1:length(storage)
 %         fprintf(fid,'%s\n',storage(k));
-%     end 
+%     end
 %     fclose(fid);
 
 
@@ -225,4 +236,3 @@ end
 %    savecase(output, base_model);
 %end
 %~isempty(modifier.period(i).(fields{j}))
-

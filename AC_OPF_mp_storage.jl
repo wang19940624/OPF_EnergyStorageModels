@@ -216,7 +216,12 @@ for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
     end
 end
 
-
+# Generation Ramp rate limits
+for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
+    if t != 1
+        @constraint(model, -ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60 <= pg[t,i]- pg[t-1,i] <= ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60)
+    end
+end
 
 ###############################################################################
 # 3. Solve the Optimal Power Flow Model and Review the Results
@@ -255,7 +260,7 @@ for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:stor
 end
 
 # note: the optimization model is in per unit, so the baseMVA value is used to restore the physical units
-
+include("plotting_functions.jl")
 plotGeneration(ref);
 plotSoC(ref);
 plotStoragePower(ref)
