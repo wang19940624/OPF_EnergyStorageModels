@@ -1,30 +1,31 @@
-
 # Plotting code
 using PyCall, PyPlot
-function plotGeneration(ref)
+function plotGeneration(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
-    timesteps = length(collect(keys(ref[:nw])))
-    generators = length(collect(keys(ref[:nw][1][:gen])))
+    t_start = minimum(collect(keys(data[:nw])))
+    generators = length(collect(keys(data[:nw][t_start][:gen])))
     x = zeros(generators, timesteps)
     y = zeros(generators, timesteps)
 
-    for i=1:generators
-        for t in sort(collect(keys(ref[:nw])))
-            x[i,t] = t
-            y[i,t] = getvalue(pg[t,i])*mp_data["baseMVA"]
+    for i in sort(collect(keys(data[:nw][t_start][:gen])))
+        for t in sort(collect(keys(data[:nw])))
+            if t<=timesteps
+                x[i,t] = t
+                y[i,t] = data[:nw][t][:gen][i]["pg"]*baseMVA
+            end
         end
     end
 
     ################
     ##  Bar Plot  ##
     ################
-    fig = figure("Generation)",figsize=(8,8))
+    fig = figure(figsize=(8,8))
     b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
     for i = 2:generators
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Generation $(1)")
+    title("Generation")
     grid("true")
     xlabel("Timestep")
     ylabel("MWs")
@@ -33,24 +34,26 @@ function plotGeneration(ref)
     savefig("Generation.svg")
 end
 
-function plotDemand(ref)
+function plotDemand(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
-    timesteps = length(collect(keys(ref[:nw])))
-    loads = length(collect(keys(ref[:nw][1][:load])))
+    t_start = minimum(collect(keys(data[:nw])))
+    loads = length(collect(keys(data[:nw][t_start][:load])))
     x = zeros(loads, timesteps)
     y = zeros(loads, timesteps)
 
-    for i=1:loads
-        for t in sort(collect(keys(ref[:nw])))
-            x[i,t] = t
-            y[i,t] = ref[:nw][t][:load][i]["pd"]*mp_data["baseMVA"]
+    for i in sort(collect(keys(data[:nw][t_start][:load])))
+        for t in sort(collect(keys(data[:nw])))
+            if t<=timesteps
+                x[i,t] = t
+                y[i,t] = data[:nw][t][:load][i]["pd"]*baseMVA
+            end
         end
     end
 
     ################
     ##  Bar Plot  ##
     ################
-    fig = figure("Load)",figsize=(8,8))
+    fig = figure(figsize=(8,8))
     b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
     for i = 2:loads
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
@@ -65,24 +68,26 @@ function plotDemand(ref)
     savefig("Loads.svg")
 end
 
-function plotSoC(ref)
+function plotSoC(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
-    timesteps = length(collect(keys(ref[:nw])))
-    storage = length(collect(keys(ref[:nw][1][:storage])))
+    t_start = minimum(collect(keys(data[:nw])))
+    storage = length(collect(keys(data[:nw][t_start][:storage])))
     x = zeros(storage, timesteps)
     y = zeros(storage, timesteps)
 
-    for i=1:storage
-        for t in sort(collect(keys(ref[:nw])))
-            x[i,t] = t
-            y[i,t] = getvalue(es[t,i])/ref[:nw][t][:storage][i]["energy_rating"]
+    for  i in sort(collect(keys(data[:nw][t_start][:storage])))
+        for t in sort(collect(keys(data[:nw])))
+            if t<=timesteps
+                x[i,t] = t
+                y[i,t] = data[:nw][t][:storage][i]["energy"]*baseMVA
+            end
         end
     end
 
     ################
     ##  Bar Plot  ##
     ################
-    fig = figure("SoC",figsize=(8,8))
+    fig = figure(figsize=(8,8))
     b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
     for i = 2:storage
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
@@ -98,24 +103,29 @@ function plotSoC(ref)
     savefig("SoC.svg")
 end
 
-function plotStoragePower(ref)
+function plotStoragePower(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
-    timesteps = length(collect(keys(ref[:nw])))
-    storage = length(collect(keys(ref[:nw][1][:storage])))
+    t_start = minimum(collect(keys(data[:nw])))
+    storage = length(collect(keys(data[:nw][t_start][:storage])))
     x = zeros(storage, timesteps)
     y = zeros(storage, timesteps)
 
-    for i=1:storage
-        for t in sort(collect(keys(ref[:nw])))
-            x[i,t] = t
-            y[i,t] = getvalue(ps[t,i])*mp_data["baseMVA"]
+    for i in sort(collect(keys(data[:nw][t_start][:storage])))
+        for t in sort(collect(keys(data[:nw])))
+            if t == t_start
+                x[i,t] = t
+                y[i,t] = 0
+            elseif t<=timesteps
+                x[i,t] = t
+                y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])*data[:nw][t][:time_elapsed]*baseMVA
+            end
         end
     end
 
     ################
     ##  Bar Plot  ##
     ################
-    fig = figure("Storage Power",figsize=(8,8))
+    fig = figure(figsize=(8,8))
     b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
     for i = 2:storage
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)

@@ -8,7 +8,7 @@ base_model  = case_ieee123();
 fname = 'ModelData/case_ieee123_storage_';
 
 % number of periods
-periods = 10;
+periods = 500;
 
 % storage elements
 storageElements = 1;
@@ -150,7 +150,7 @@ fields = {'bus', 'gen', 'gencost', 'branch', 'storage'};
                                                                         % Change ramp rate here
 %  bus	Pg	Qg	Qmax	Qmin	Vg	mBase	status	Pmax	Pmin	Pc1	Pc2	Qc1min	Qc1max	Qc2min	Qc2max	ramp_agc	ramp_10	ramp_30	ramp_q	apf
 gen = [
-	56	0	0	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
+	56	3	3	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
 ];
      rng(0)
      modifier.period(1).bus = bus;
@@ -162,7 +162,7 @@ gen = [
 
      for i =1:periods
          modifier.period(i).gen = gen;
-         modifier.period(i).gen(:,17) = .001;
+         modifier.period(i).gen(:,17) = 1;
      end
 
 
