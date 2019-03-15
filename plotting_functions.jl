@@ -1,6 +1,6 @@
 # Plotting code
 using PyCall, PyPlot
-function plotGeneration(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+function plotGeneration(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
     generators = length(collect(keys(data[:nw][t_start][:gen])))
@@ -31,10 +31,10 @@ function plotGeneration(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))
     ylabel("MWs")
     legend(1:generators, loc="center left", bbox_to_anchor=(1, 0.5))
     gcf() # Needed for IJulia to plot inline
-    savefig("Generation.svg")
+    savefig(string(name,"_Generation.svg"))
 end
 
-function plotDemand(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+function plotDemand(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
     loads = length(collect(keys(data[:nw][t_start][:load])))
@@ -65,10 +65,10 @@ function plotDemand(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ylabel("MWs")
     legend(1:loads, loc="center left", bbox_to_anchor=(1, 0.5))
     gcf() # Needed for IJulia to plot inline
-    savefig("Loads.svg")
+    savefig(string(name,"_Loads.svg"))
 end
 
-function plotSoC(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+function plotSoC(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
     storage = length(collect(keys(data[:nw][t_start][:storage])))
@@ -100,10 +100,10 @@ function plotSoC(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     legend(1:storage, loc="center left", bbox_to_anchor=(1, 0.5))
 
     gcf() # Needed for IJulia to plot inline
-    savefig("SoC.svg")
+    savefig(string(name,"_SoC.svg"))
 end
 
-function plotStoragePower(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+function plotStoragePower(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
     storage = length(collect(keys(data[:nw][t_start][:storage])))
@@ -138,5 +138,41 @@ function plotStoragePower(data,baseMVA=1,timesteps=length(collect(keys(data[:nw]
     legend(1:storage, loc="center left", bbox_to_anchor=(1, 0.5))
 
     gcf() # Needed for IJulia to plot inline
-    savefig("StoragePower.svg")
+    savefig(string(name,"_StoragePower.svg"))
+end
+
+function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))))
+    ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
+    t_start = minimum(collect(keys(data)))
+    generators = length(collect(keys(data[t_start])))
+    x = zeros(generators, timesteps)
+    y = zeros(generators, timesteps)
+
+    for i in sort(collect(keys(data[t_start])))
+        for t in sort(collect(keys(data)))
+            if t<=timesteps
+                x[i,t] = t
+                y[i,t] = data[t][i]
+            end
+        end
+    end
+
+    ################
+    ##  Bar Plot  ##
+    ################
+    fig = figure(figsize=(8,8))
+    b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
+    for i = 2:generators
+        b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
+    end
+    axis("tight")
+    title("Cost of Generation")
+    grid("true")
+    xlabel("Timestep")
+    ylabel("Energy Cost [\$]")
+    legend(1:generators, loc="center left", bbox_to_anchor=(1, 0.5))
+    #text([(2, 2, text(string("Total Cost: \$", sum(data[t][i] for t in keys(data) for i in keys(data[t]))), :right, 20))])
+    text(2,2,string("Total Cost: \$", sum(data[t][i] for t in keys(data) for i in keys(data[t]))))
+    gcf() # Needed for IJulia to plot inline
+    savefig(string(name,"_GenCost.svg"))
 end

@@ -67,6 +67,8 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 
 # time horizon for optimization
 horizon = 25
+gen_cost = Dict(t => Dict() for t =1:length(keys(mp_data["nw"]))-horizon)
+#[t] = results["cost"][t]
 
 for k=1:length(keys(mp_data["nw"]))-horizon
     global horizon_data = Dict{String,Any}(
@@ -88,7 +90,8 @@ for k=1:length(keys(mp_data["nw"]))-horizon
     results = func_AC_OPF_MP(ref, k, horizon)
 
     # make generation and storage decisions for current time period
-    println("Time period $(k) \$",results["cost"][1])
+    println("Time period $(k), Generation cost is: \$", sum(results["cost"][k][i] for i in keys(results["cost"][k])))
+    gen_cost[k] = results["cost"][k]
     for i in keys(ref[:nw][k][:gen])
         mp_data["nw"][string(k+1)]["gen"][string(i)]["pg"] = results["pg"][k,i]
         mp_data["nw"][string(k+1)]["gen"][string(i)]["qg"] = results["qg"][k,i]
@@ -103,7 +106,8 @@ solved = PowerModels.build_ref(mp_data)
 include("plotting_functions.jl")
 optimization_window = length(keys(mp_data["nw"]))-horizon+1
 println("Making plots...")
-plotGeneration(solved, mp_data["baseMVA"],optimization_window)
-plotDemand(solved, mp_data["baseMVA"],optimization_window)
-plotSoC(solved, mp_data["baseMVA"],optimization_window)
-plotStoragePower(solved, mp_data["baseMVA"],optimization_window)
+plotGeneration(solved, "Rand100_AC_MH", mp_data["baseMVA"],optimization_window);
+plotDemand(solved, "Rand100_AC_MH", mp_data["baseMVA"],optimization_window);
+plotSoC(solved, "Rand100_AC_MH", mp_data["baseMVA"],optimization_window);
+plotStoragePower(solved, "Rand100_AC_MH", mp_data["baseMVA"],optimization_window);
+plotGenCost(gen_cost, "Rand100_AC_MH", mp_data["baseMVA"],optimization_window);
