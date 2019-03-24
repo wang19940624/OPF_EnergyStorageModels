@@ -1,5 +1,13 @@
+using JuMP, Ipopt, PowerModels
+
 function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw]))))
 
+    # Instancate a Solver
+    #--------------------
+
+    nlp_solver = IpoptSolver(print_level=0)
+    # note: print_level changes the amount of solver information printed to the terminal
+    
     ###############################################################################
     # 1. Building the Optimal Power Flow Model
     ###############################################################################
@@ -168,24 +176,6 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
     # Check the value of the objective function
     cost = getobjectivevalue(model)
     #println("The cost of generation is $(cost).")
-
-
-    for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:gen])))
-        #println("In timestep $(t), generator $(i) produces $(getvalue(pg[t,i])*mp_data["baseMVA"]) MW")
-    end
-
-
-    for t in sort(collect(keys(ref[:nw])))
-        #println("In timestep $(t), $(sum(getvalue(pg[t,i])*mp_data["baseMVA"] for i in keys(ref[:nw][t][:gen]))) MW is generated")
-    end
-
-    for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:storage])))
-        #println("In timestep $(t), storage system $(i) stores $(-getvalue(ps[t,i])) p.u.")
-    end
-
-    for t in sort(collect(keys(ref[:nw]))), i in sort(collect(keys(ref[:nw][t][:storage])))
-        #println("In timestep $(t), storage system $(i) stores $(getvalue(es[t,i])*mp_data["baseMVA"]) MWh")
-    end
 
 
 

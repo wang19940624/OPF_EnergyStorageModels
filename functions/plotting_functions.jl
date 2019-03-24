@@ -1,5 +1,5 @@
 # Plotting code
-using PyCall, PyPlot
+using JuMP, Ipopt,PyCall, PyPlot
 function plotGeneration(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
@@ -117,7 +117,7 @@ function plotStoragePower(data, name, baseMVA=1,timesteps=length(collect(keys(da
                 y[i,t] = 0
             elseif t<=timesteps
                 x[i,t] = t
-                y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])*data[:nw][t][:time_elapsed]*baseMVA
+                y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
             end
         end
     end
@@ -175,4 +175,86 @@ function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))
     text(2,2,string("Total Cost: \$", sum(data[t][i] for t in keys(data) for i in keys(data[t]))))
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_GenCost.svg"))
+end
+
+function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+    ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
+    t_start = minimum(collect(keys(data[:nw])))
+    storage = length(collect(keys(data[:nw][t_start][:storage])))
+    x = zeros(storage, timesteps)
+    y = zeros(storage, timesteps)
+
+    for i in sort(collect(keys(data[:nw][t_start][:storage])))
+        for t in sort(collect(keys(data[:nw])))
+            if t == t_start
+                x[i,t] = data[:nw][t][:storage][i]["energy"]*baseMVA
+                y[i,t] = 0
+            elseif t<=timesteps
+                x[i,t] = data[:nw][t][:storage][i]["energy"]*baseMVA
+                y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
+            end
+        end
+    end
+
+    ################
+    ##  Bar Plot  ##
+    ################
+    fig = figure(figsize=(8,8))
+    #b = scatter(x[1,:],y[1,:],alpha=0.4)
+    #b = scatter(x,y,alpha=0.4)
+    #for i = 1:storage
+    #    b = scatter(x[i,:],y[i,:],alpha=0.4)
+    #end
+    for i = 1:storage
+        b = scatter(x[i,:],y[i,:],alpha=0.4)
+    end
+
+    #######################
+    ## Operating Boundry ##
+    #######################
+    #for i in sort(collect(keys(data[:nw][t_start][:storage])))
+        omega =  collect(0:0.005:sqrt(ref[:nw][t_start][:storage][1]["energy_rating"]/k))
+
+        E = k.*omega.^2
+        Phigh = T.*omega
+        plot(E,Phigh,E,-Phigh)
+
+
+     model = Model(solver=IpoptSolver(print_level=0))
+     @variable(model, x >= 0)
+        @variable(model, y >= 0)
+        @variable(model, omega)
+        @constraint(model, x == k*omega^2)
+        @NLconstraint(model, y == T*omega)
+        @objective(model, Max, (2y)*(maximum(E)-x))
+        solve(model)
+
+    #println("Area = ", getobjectivevalue(model))
+    energy = getvalue(x)
+    power = getvalue(y)
+
+    #println("energy = ", energy)
+    #println("power = ", power)
+
+    x1 = range(energy, stop=energy, length=10)
+    y1 = range(-power,stop=power,length=10)
+    x2 = range(energy, stop=maximum(E), length=10)
+    y2 = range(power, stop=power, length=10)
+    x3 = range(energy, stop=maximum(E), length=10)
+    y3 = range(-power, stop=-power, length=10)
+
+
+    plot(x1,y1,x2,y2,x3,y3)
+
+
+    #end
+    axis("tight")
+    title("Storage Operating Points")
+    grid("true")
+    xlabel("Energy Storage")
+    ylabel("Power Demand MWs")
+    legend(1:storage, loc="center left", bbox_to_anchor=(1, 0.5))
+
+    gcf() # Needed for IJulia to plot inline
+    savefig(string(name,"_StorageOperating.svg"))
 end
