@@ -34,10 +34,10 @@ end
 storage_energy = 10 .^(range(-2,stop=0,length=20)) #Energy storage from 0.01 MWh to 1 MWh
 total_gen_cost = zeros(length(storage_energy))
 for l = 1:length(storage_energy)
-
+    println("Energy Storage set to $(storage_energy[l]) MWh")
     k = storage_energy[l]*10^2
     T = k
-
+    mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy[l]
     ## use build_ref to filter out inactive components
     #ref = PowerModels.build_ref(data)[:nw][0]
     ref = PowerModels.build_ref(mp_data)
@@ -50,7 +50,6 @@ for l = 1:length(storage_energy)
     results = func_AC_OPF_CT_MP(ref,k,T)
 
     # make generation and storage decisions for current time period
-    # println("Time period $(k) \$",results["cost"][1])
     gen_cost = results["cost"];
     for k in keys(ref[:nw]), i in keys(ref[:nw][k][:gen])
         mp_data["nw"][string(k)]["gen"][string(i)]["pg"] = results["pg"][k,i]
@@ -72,7 +71,7 @@ for l = 1:length(storage_energy)
     plotStoragePower(ref, string(output_path,"CT_AC_",storage_energy[l]));
 
     #plotGenCost(gen_cost, string(output_path,"CT_AC_",storage_energy[l]));
-    plotCTEnergyPower(solved, string(output_path,"CT_AC_",storage_energy[l]));
+    plotCTEnergyPower(solved, string(output_path,"CT_AC_",storage_energy[l]),k,T);
 
     if l == 1
         plotDemand(solved, string(output_path,"CT_AC_",storage_energy[l]));

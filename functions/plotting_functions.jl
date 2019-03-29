@@ -217,18 +217,6 @@ function plotCTEnergyPower(data, name, k=1, T=1, baseMVA=1,timesteps=length(coll
     Phigh = T.*omega
     plot(E,Phigh,E,-Phigh)
 
-    # model = Model(solver=IpoptSolver(print_level=0))
-    # @variable(model, x == .25*maximum(Phigh))
-    # @variable(model, y >= 0)
-    # @variable(model, omega)
-    # @constraint(model, x == k*omega^2)
-    # @NLconstraint(model, y == T*omega)
-    # @objective(model, Max, (2y)*(maximum(E)-x))
-    # solve(model)
-
-    #println("Area = ", getobjectivevalue(model))
-    # energy = getvalue(x)
-    # power = getvalue(y)
     energy = 0.25*maximum(E)
     power = T*sqrt(energy/k)
 
