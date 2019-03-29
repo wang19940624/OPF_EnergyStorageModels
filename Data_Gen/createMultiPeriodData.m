@@ -1,14 +1,16 @@
 clear all
 %% Create multiperiod files for power model
 
+%% Parameters
 % base power model
 base_model  = case_ieee123();
 
 % output file name
-fname = './Case_Studies/ModelData/case_ieee123_storage_';
+folder = 'Output_Model/';
+fname = 'case_ieee123_storage_';
 
 % number of periods
-periods = 500;
+periods = 1000;
 
 % storage elements
 storageElements = 1;
@@ -18,16 +20,26 @@ modifier = struct();
 
 fields = {'bus', 'gen', 'gencost', 'branch', 'storage'};
 
-%
-%     High_power = Low_power;
-%     High_power(:,3) = High_power(:,3)*5;
-%
-%     for i =1:25
-%         modifier.period(i).bus = Low_power;
-%     end
-%     for i = 26:50
-%         modifier.period(i).bus = High_power;
-%     end
+%% Setup output folder
+
+% Specify the folder where the files live.
+% Check to make sure that folder actually exists.  Warn user if it doesn't.
+if ~isdir(folder)
+  errorMessage = sprintf('Error: The following folder does not exist:\n%s', myFolder);
+  uiwait(warndlg(errorMessage));
+  return;
+end
+% Get a list of all files in the folder with the desired file name pattern.
+filePattern = fullfile(folder, '*.m'); % Change to whatever pattern you need.
+theFiles = dir(filePattern);
+for k = 1 : length(theFiles)
+  baseFileName = theFiles(k).name;
+  fullFileName = fullfile(folder, baseFileName);
+  fprintf(1, 'Now deleting %s\n', fullFileName);
+  delete(fullFileName);
+end
+
+%% Modifier variables
 
 %	bus_i	type	Pd	Qd	Gs	Bs	area	Vm	Va	baseKV	zone	Vmax	Vmin
     bus = [
@@ -109,7 +121,7 @@ variablity = .1;
  end
 
 
-
+%% Modify and save network
 for i=1:periods
     temp = base_model;
     if i <= length(modifier.period)
@@ -123,7 +135,7 @@ for i=1:periods
             end
         end
     end
-    output = strcat(fname,num2str(i));
+    output = strcat(folder,fname,num2str(i));
     display("Saving file: " + output + ".m");
     savecase(output, temp);
 
@@ -134,7 +146,7 @@ for i=1:periods
     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
     storage(5) ="mpc.storage = [";
     % Flywheel
-    storage(6) ="	 11            0.005     0.01          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.0         1;";
+    storage(6) ="	 11            0.005     0.01          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.01         1;";
     %
     storage(7) ="];";
 

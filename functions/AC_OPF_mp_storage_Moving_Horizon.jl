@@ -66,7 +66,7 @@ end
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
 # time horizon for optimization
-horizon = 25
+horizon = 10
 gen_cost = Dict(t => Dict() for t =1:length(keys(mp_data["nw"]))-horizon)
 #[t] = results["cost"][t]
 

@@ -25,13 +25,14 @@ function plotGeneration(data, name, baseMVA=1,timesteps=length(collect(keys(data
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Generation")
+    title("Generation $name")
     grid("true")
     xlabel("Timestep")
     ylabel("MWs")
     legend(1:generators, loc="center left", bbox_to_anchor=(1, 0.5))
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_Generation.svg"))
+    close("all")
 end
 
 function plotDemand(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
@@ -59,13 +60,14 @@ function plotDemand(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Load")
+    title("Load $name")
     grid("true")
     xlabel("Timestep")
     ylabel("MWs")
     legend(1:loads, loc="center left", bbox_to_anchor=(1, 0.5))
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_Loads.svg"))
+    close("all")
 end
 
 function plotSoC(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
@@ -93,7 +95,7 @@ function plotSoC(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Storage Use")
+    title("Storage Use $name")
     grid("true")
     xlabel("Timestep")
     ylabel("State of Charge")
@@ -101,6 +103,7 @@ function plotSoC(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))
 
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_SoC.svg"))
+    close("all")
 end
 
 function plotStoragePower(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
@@ -131,7 +134,7 @@ function plotStoragePower(data, name, baseMVA=1,timesteps=length(collect(keys(da
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Storage Power")
+    title("Storage Power $name")
     grid("true")
     xlabel("Timestep")
     ylabel("Power Demand MWs")
@@ -139,6 +142,7 @@ function plotStoragePower(data, name, baseMVA=1,timesteps=length(collect(keys(da
 
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_StoragePower.svg"))
+    close("all")
 end
 
 function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))))
@@ -166,7 +170,7 @@ function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))
         b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
     end
     axis("tight")
-    title("Cost of Generation")
+    title("Cost of Generation $name")
     grid("true")
     xlabel("Timestep")
     ylabel("Energy Cost [\$]")
@@ -175,9 +179,10 @@ function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))
     text(2,2,string("Total Cost: \$", sum(data[t][i] for t in keys(data) for i in keys(data[t]))))
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_GenCost.svg"))
+    close("all")
 end
 
-function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
+function plotCTEnergyPower(data, name, k=1, T=1, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
     storage = length(collect(keys(data[:nw][t_start][:storage])))
@@ -200,11 +205,6 @@ function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(
     ##  Bar Plot  ##
     ################
     fig = figure(figsize=(8,8))
-    #b = scatter(x[1,:],y[1,:],alpha=0.4)
-    #b = scatter(x,y,alpha=0.4)
-    #for i = 1:storage
-    #    b = scatter(x[i,:],y[i,:],alpha=0.4)
-    #end
     for i = 1:storage
         b = scatter(x[i,:],y[i,:],alpha=0.4)
     end
@@ -212,29 +212,26 @@ function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(
     #######################
     ## Operating Boundry ##
     #######################
-    #for i in sort(collect(keys(data[:nw][t_start][:storage])))
-        omega =  collect(0:0.005:sqrt(ref[:nw][t_start][:storage][1]["energy_rating"]/k))
+    omega =  collect(LinRange(0.00,sqrt(data[:nw][t_start][:storage][1]["energy_rating"]/k),25))
+    E = k.*omega.^2
+    Phigh = T.*omega
+    plot(E,Phigh,E,-Phigh)
 
-        E = k.*omega.^2
-        Phigh = T.*omega
-        plot(E,Phigh,E,-Phigh)
-
-
-     model = Model(solver=IpoptSolver(print_level=0))
-     @variable(model, x >= 0)
-        @variable(model, y >= 0)
-        @variable(model, omega)
-        @constraint(model, x == k*omega^2)
-        @NLconstraint(model, y == T*omega)
-        @objective(model, Max, (2y)*(maximum(E)-x))
-        solve(model)
+    # model = Model(solver=IpoptSolver(print_level=0))
+    # @variable(model, x == .25*maximum(Phigh))
+    # @variable(model, y >= 0)
+    # @variable(model, omega)
+    # @constraint(model, x == k*omega^2)
+    # @NLconstraint(model, y == T*omega)
+    # @objective(model, Max, (2y)*(maximum(E)-x))
+    # solve(model)
 
     #println("Area = ", getobjectivevalue(model))
-    energy = getvalue(x)
-    power = getvalue(y)
+    # energy = getvalue(x)
+    # power = getvalue(y)
+    energy = 0.25*maximum(E)
+    power = T*sqrt(energy/k)
 
-    #println("energy = ", energy)
-    #println("power = ", power)
 
     x1 = range(energy, stop=energy, length=10)
     y1 = range(-power,stop=power,length=10)
@@ -249,7 +246,7 @@ function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(
 
     #end
     axis("tight")
-    title("Storage Operating Points")
+    title("Storage Operating Points $name")
     grid("true")
     xlabel("Energy Storage")
     ylabel("Power Demand MWs")
@@ -257,4 +254,5 @@ function plotCTEnergyPower(data, name, k=0.5, T=100, baseMVA=1,timesteps=length(
 
     gcf() # Needed for IJulia to plot inline
     savefig(string(name,"_StorageOperating.svg"))
+    close("all")
 end
