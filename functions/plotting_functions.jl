@@ -1,5 +1,6 @@
 # Plotting code
 using JuMP, Ipopt,PyCall, PyPlot
+#TODO Make svg/pong plot an option
 function plotGeneration(data, name, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
@@ -181,7 +182,7 @@ function plotGenCost(data, name, baseMVA=1, timesteps=length(collect(keys(data))
     savefig(string(name,"_GenCost.svg"))
     close("all")
 end
-
+ #TODO use flywheel eficiiency to shift parabola ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"]
 function plotCTEnergyPower(data, name, k=1, T=1, baseMVA=1,timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
     t_start = minimum(collect(keys(data[:nw])))
@@ -214,11 +215,11 @@ function plotCTEnergyPower(data, name, k=1, T=1, baseMVA=1,timesteps=length(coll
     #######################
     omega =  collect(LinRange(0.00,sqrt(data[:nw][t_start][:storage][1]["energy_rating"]/k),25))
     E = k.*omega.^2
-    Phigh = T.*omega
+    Phigh = T.*omega*data[:nw][t_start][:storage][1]["charge_efficiency"]
     plot(E,Phigh,E,-Phigh)
 
     energy = 0.25*maximum(E)
-    power = T*sqrt(energy/k)
+    power = T*sqrt(energy/k)*data[:nw][t_start][:storage][1]["charge_efficiency"]
 
 
     x1 = range(energy, stop=energy, length=10)

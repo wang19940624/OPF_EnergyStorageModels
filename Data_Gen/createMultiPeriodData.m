@@ -10,7 +10,7 @@ folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-periods = 1000;
+periods = 500;
 
 % storage elements
 storageElements = 1;
@@ -106,7 +106,7 @@ gen = [
 	56	3	3	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
 ];
 
-rng(0)
+rng(1)
 variablity = .1;
  modifier.period(1).bus = bus;
  for i =2:periods
@@ -146,7 +146,7 @@ for i=1:periods
     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
     storage(5) ="mpc.storage = [";
     % Flywheel
-    storage(6) ="	 11            0.005     0.01          1.0             1.0                 0.8                0.9                   100.0        -50.0 70.0  0.1 0.0	0.01         1;";
+    storage(6) ="	 11            0.005     0.01          0.1             0.1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
     %
     storage(7) ="];";
 

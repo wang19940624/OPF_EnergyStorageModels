@@ -143,14 +143,16 @@ function func_AC_OPF_CT_MP(ref, k=1, T=1, t_start=1, horizon=maximum(collect(key
         if t == t_start
             # Initial Energy Constraint
             for e in ref[:nw][t][:bus_storage][i]
-                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]*(1-ref[:nw][t][:storage][e]["standby_loss"]) - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["energy"]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
+                #@constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]* - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
             end
 
         else
             # Energy Balance Constraint between time steps
             for e in ref[:nw][t][:bus_storage][i]
                 #@constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"]*ref[:nw][t][:time_elapsed]/k) - ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]*ref[:nw][t][:time_elapsed])
-                @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
+                #TODO  verify this is correct (does standby multiply current energy?)
+                @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(es[t-1,e]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
             end
         end
         if t == t_start + horizon - 1 # index of final time period

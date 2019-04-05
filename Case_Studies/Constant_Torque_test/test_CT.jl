@@ -4,9 +4,9 @@ using Ipopt
 using JuMP
 
 # function files
-include("../functions/func_AC_OPF_CT_MP.jl")
-include("../functions/func_networkRead.jl")
-include("../functions/plotting_functions.jl")
+include("../../functions/func_AC_OPF_CT_MP.jl")
+include("../../functions/func_networkRead.jl")
+include("../../functions/plotting_functions.jl")
 
 
 path = "./ModelData/"
