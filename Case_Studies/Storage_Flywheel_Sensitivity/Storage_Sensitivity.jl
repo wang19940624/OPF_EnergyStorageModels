@@ -85,4 +85,4 @@ println(storage_energy)
 println("Total Cost of Generation:")
 println(total_gen_cost)
 
-writedlm("Gen_Cost_v_storage_energy", [storage_energy total_gen_cost], ',')
+writedlm("Gen_Cost_v_storage_energy.txt", [storage_energy total_gen_cost], ',')

@@ -79,4 +79,4 @@ println(losses)
 println("Total Cost of Generation:")
 println(total_gen_cost)
 
-writedlm("Gen_Cost_v_Losses", [losses total_gen_cost], ',')
+writedlm("Gen_Cost_v_Losses.txt", [losses total_gen_cost], ',')
