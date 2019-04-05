@@ -25,7 +25,7 @@ mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
 #losses = [0,0.01,0.05,0.1,0.15,0.2,0.25]
-losses = collect(LinRange(0.00,0.05,20))
+losses = collect(LinRange(0.00,0.20,20))
 total_gen_cost = zeros(length(losses))
 for l=1:length(losses)
     println("Losses set to $(losses[l])%")
@@ -62,15 +62,15 @@ for l=1:length(losses)
 
     println("Making plots...")
 
-    plotGeneration(solved, string(output_path,"CT_AC_",losses[l]));
-    plotSoC(solved, string(output_path,"CT_AC_",losses[l]));
-    plotStoragePower(solved, string(output_path,"CT_AC_",losses[l]));
+    plotGeneration(solved, string(output_path,"CT_AC_",l),"Standby Loss: $(losses[l])");#, "Efficiency: $(losses[l])");
+    plotSoC(solved, string(output_path,"CT_AC_",l), "Standby Loss: $(losses[l])");
+    plotStoragePower(solved, string(output_path,"CT_AC_",l), "Standby Loss: $(losses[l])");
 
     #plotGenCost(gen_cost, string(output_path,"CT_AC_",losses[l]));
-    plotCTEnergyPower(solved, string(output_path,"CT_AC_",losses[l]));
+    plotCTEnergyPower(solved, string(output_path,"CT_AC_",l), "Standby Loss: $(losses[l])");
 
     if l == 1
-        plotDemand(solved, string(output_path,"CT_AC_",losses[l]));
+        plotDemand(solved, string(output_path,"CT_AC_",l), "Standby Loss: $(losses[l])");
     end
 end
 

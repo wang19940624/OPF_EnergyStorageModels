@@ -22,7 +22,7 @@ mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
 
-losses = 0.025  #Losses are 2.5% per hour
+losses = 0.1  #Losses are 10% per hour
 
 for l=1:length(losses)
     println("Losses set to $(losses)%")
@@ -34,10 +34,12 @@ end
 storage_energy = 10 .^(range(-2,stop=0,length=20)) #Energy storage from 0.01 MWh to 1 MWh
 total_gen_cost = zeros(length(storage_energy))
 for l = 1:length(storage_energy)
-    println("Energy Storage set to $(storage_energy[l]) MWh")
+    println("Energy Storage set to $(storage_energy[l]) MWh, Energy Power set to $(storage_energy[l]*10)")
     k = storage_energy[l]*10^2
     T = k
-    mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy[l]
+    for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+        mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy[l]
+    end
     ## use build_ref to filter out inactive components
     #ref = PowerModels.build_ref(data)[:nw][0]
     ref = PowerModels.build_ref(mp_data)
@@ -66,19 +68,19 @@ for l = 1:length(storage_energy)
 
     println("Making plots...")
 
-    plotGeneration(solved, string(output_path,"CT_AC_",storage_energy[l]));
-    plotSoC(solved, string(output_path,"CT_AC_",storage_energy[l]));
-    plotStoragePower(ref, string(output_path,"CT_AC_",storage_energy[l]));
+    plotGeneration(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
+    plotSoC(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
+    plotStoragePower(ref, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
 
     #plotGenCost(gen_cost, string(output_path,"CT_AC_",storage_energy[l]));
-    plotCTEnergyPower(solved, string(output_path,"CT_AC_",storage_energy[l]),k,T);
+    plotCTEnergyPower(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh",k,T);
 
     if l == 1
-        plotDemand(solved, string(output_path,"CT_AC_",storage_energy[l]));
+        plotDemand(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
     end
 end
 
-println("Efficiency Values:")
+println("Storage Values:")
 println(storage_energy)
 println("Total Cost of Generation:")
 println(total_gen_cost)
