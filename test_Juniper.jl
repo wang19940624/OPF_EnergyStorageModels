@@ -35,6 +35,8 @@ ref = PowerModels.build_ref(mp_data)
 # note: ref contains all the relevant system parameters needed to build the OPF model
 # When we introduce constraints and variable bounds below, we use the parameters in ref.
 
+t_start = 1
+horizon = 8
 
 
 # Instancate a Solver
@@ -123,6 +125,82 @@ model = Model(solver = solver)
         )
     end
 
+    # Branch flow limits
+    for t in keys(ref[:nw]), (i, branch) in ref[:nw][t][:branch]
+        # build the from variable id of the i-th branch
+        f_idx = (i, branch["f_bus"], branch["t_bus"])
+        # build the to variable id of the i-th branch
+        t_idx = (i, branch["t_bus"], branch["f_bus"])
+        # note: it is necessary to distinguish between the from and to sides of a branch due to power losses
+
+        p_fr = p[t, f_idx]                     # p_fr is a reference to the optimization variable p[f_idx]
+        q_fr = q[t, f_idx]                     # q_fr is a reference to the optimization variable q[f_idx]
+        p_to = p[t, t_idx]                     # p_to is a reference to the optimization variable p[t_idx]
+        q_to = q[t, t_idx]                     # q_to is a reference to the optimization variable q[t_idx]
+        # note: adding constraints to p_fr is equivalent to adding constraints to p[f_idx], and so on
+
+        vm_fr = vm[t, branch["f_bus"]]         # vm_fr is a reference to the optimization variable vm on the from side of the branch
+        vm_to = vm[t, branch["t_bus"]]         # vm_to is a reference to the optimization variable vm on the to side of the branch
+        va_fr = va[t, branch["f_bus"]]         # va_fr is a reference to the optimization variable va on the from side of the branch
+        va_to = va[t, branch["t_bus"]]         # va_fr is a reference to the optimization variable va on the to side of the branch
+
+        # Compute the branch parameters and transformer ratios from the data
+
+
+        g, b = PowerModels.calc_branch_y(branch)
+        tr, ti = PowerModels.calc_branch_t(branch)
+        g_fr = branch["g_fr"]
+        b_fr = branch["b_fr"]
+        g_to = branch["g_to"]
+        b_to = branch["b_to"]
+        tm = branch["tap"]^2
+        # note: tap is assumed to be 1.0 on non-transformer branches
+
+        # From side of the branch flow
+        @NLconstraint(model, p_fr ==  (g+g_fr)/tm*vm_fr^2 + (-g*tr+b*ti)/tm*(vm_fr*vm_to*cos(va_fr-va_to)) + (-b*tr-g*ti)/tm*(vm_fr*vm_to*sin(va_fr-va_to)) )
+        @NLconstraint(model, q_fr == -(b+b_fr)/tm*vm_fr^2 - (-b*tr-g*ti)/tm*(vm_fr*vm_to*cos(va_fr-va_to)) + (-g*tr+b*ti)/tm*(vm_fr*vm_to*sin(va_fr-va_to)) )
+
+        # To side of the branch flow
+        @NLconstraint(model, p_to ==  (g+g_to)*vm_to^2 + (-g*tr-b*ti)/tm*(vm_to*vm_fr*cos(va_to-va_fr)) + (-b*tr+g*ti)/tm*(vm_to*vm_fr*sin(va_to-va_fr)) )
+        @NLconstraint(model, q_to == -(b+b_to)*vm_to^2 - (-b*tr+g*ti)/tm*(vm_to*vm_fr*cos(va_fr-va_to)) + (-g*tr-b*ti)/tm*(vm_to*vm_fr*sin(va_to-va_fr)) )
+
+        # Voltage angle difference limit
+        @constraint(model, va_fr - va_to <= branch["angmax"])
+        @constraint(model, va_fr - va_to >= branch["angmin"])
+
+        # Apparent power limit, from side and to side
+        @constraint(model, p_fr^2 + q_fr^2 <= branch["rate_a"]^2)
+        @constraint(model, p_to^2 + q_to^2 <= branch["rate_a"]^2)
+
+    end
+
+
+        # Storage Energy Balance Constraints
+        for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
+            if t == t_start
+                # Initial Energy Constraint
+                for e in ref[:nw][t][:bus_storage][i]
+                    @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["energy"]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
+                    #@constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]* - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                end
+
+            else
+                # Energy Balance Constraint between time steps
+                for e in ref[:nw][t][:bus_storage][i]
+                    #@constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"]*ref[:nw][t][:time_elapsed]/k) - ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]*ref[:nw][t][:time_elapsed])
+                    #TODO  verify this is correct (does standby multiply current energy?)
+                    @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(es[t-1,e]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
+                end
+            end
+            if t == t_start + horizon - 1 # index of final time period
+                # Final energy must equal initial energy
+                for e in ref[:nw][t][:bus_storage][i]
+                    @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"])
+                end
+            end
+        end
+
+
 
 
     # Storage Energy Constant Torque constraints
@@ -136,7 +214,16 @@ model = Model(solver = solver)
                 @constraint(model, ps[t,e] <= T*omega[t,e])
             end
     end
-    
+
+    # Generation Ramp rate limits
+    for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
+        if t != t_start
+            @constraint(model, -ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60 <= pg[t,i]- pg[t-1,i])
+            @constraint(model, pg[t,i]- pg[t-1,i] <= ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60)
+        end
+    end
+
+
 
 status = solve(model)
 
