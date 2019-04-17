@@ -1,12 +1,12 @@
-using JuMP, Ipopt, PowerModels, Juniper, MathOptInterface
+using JuMP, Ipopt, PowerModels#, Juniper, MathOptInterface
 
 function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(keys(ref[:nw]))))
 
     # Instancate a Solver
     #--------------------
 
-    #nlp_solver = IpoptSolver(print_level=0)
-    solver = JuniperSolver(IpoptSolver(print_level=0))
+    solver = IpoptSolver(print_level=0)
+    #solver = JuniperSolver(IpoptSolver(print_level=0))
     # note: print_level changes the amount of solver information printed to the terminal
 
     ###############################################################################
@@ -40,8 +40,8 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     # Add storage power variables
     @variable(model, ps[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])])
     # Binary SOS1 constraints for flywheel Power
-    @variable(model, b1[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
-    @variable(model, b2[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
+    #@variable(model, b1[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
+    #@variable(model, b2[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
     # Energy storage reactive power
     @variable(model, ref[:nw][t][:storage][i]["qmin"] <= qs[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["qmax"])
     # Flywheel energy limits
@@ -170,10 +170,10 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
             for e in ref[:nw][t][:bus_storage][i]
                 @NLconstraint(model, omega[t,e] == sqrt(es[t,e]/k))
-                @NLconstraint(model, T*omega[t,e] <= ps[t,e])
-                #@constraint(model, -T*omega[t,e]*b1[t,e] <= ps[t,e])
+                #@constraint(model, T*omega[t,e] <= ps[t,e])
+                @constraint(model, -T*omega[t,e] -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
                 #@constraint(model, -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k)*b2[t,e] <= ps[t,e])
-                @constraint(model, b1[t,e]+b2[t,e] == 1)
+                #@constraint(model, b1[t,e]+b2[t,e] == 1)
                 @constraint(model, ps[t,e] <= T*omega[t,e])
             end
     end

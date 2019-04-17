@@ -51,9 +51,9 @@ println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for
 
 println("Making plots...")
 
-plotGeneration(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power"););
-plotSoC(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power"););
-plotStoragePower(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power"););
-plotDemand(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power"););
-plotGenCost(gen_cost, "Output/CT_AC", "Flywheel Stop: 1% of charging power"););
-plotCTEnergyPower(solved, string(output_path,"CT_AC_",l), "Flywheel Stop: 1% of charging power");
+plotGeneration(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotSoC(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotStoragePower(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotDemand(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotGenCost(gen_cost, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotCTEnergyPower(solved, "Output/CT_AC_", "Flywheel Stop: 1% of charging power");
