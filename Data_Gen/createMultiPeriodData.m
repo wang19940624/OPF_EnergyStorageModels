@@ -10,7 +10,7 @@ folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-periods = 500;
+periods = 50;
 
 % storage elements
 storageElements = 1;

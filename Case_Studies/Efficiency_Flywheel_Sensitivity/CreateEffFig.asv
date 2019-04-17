@@ -1,4 +1,0 @@
-
-
-A = csvread('Gen_Cost_v_Losses.txt');
-plot(A(:,1),A(
