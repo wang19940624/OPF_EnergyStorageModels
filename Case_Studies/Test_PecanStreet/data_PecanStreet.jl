@@ -55,17 +55,17 @@ end
 
 
 solved = PowerModels.build_ref(mp_data)
-total_gen_cost[l] = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
 println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t])))
 
 println("Making plots...")
 
-plotGeneration(solved, string(output_path,"PS_AC"), "Storage: $(storage_energy[l]) MWh");
-plotSoC(solved, string(output_path,"PS_AC"), "Storage: $(storage_energy[l]) MWh");
-plotStoragePower(ref, string(output_path,"PS_AC"), "Storage: $(storage_energy[l]) MWh");
+plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street: $(storage_energy[1]) MWh");
+plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street: $(storage_energy[1]) MWh");
+plotStoragePower(ref, string(output_path,"PS_AC"), "Pecan Street: $(storage_energy[1]) MWh");
 
 #plotGenCost(gen_cost, string(output_path,"CT_AC_",storage_energy[l]));
-plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Storage: $(storage_energy[l]) MWh",k,T);
+plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street: $(storage_energy[1]) MWh",k,T);
 
 
-plotDemand(solved, string(output_path,"PS_AC"), "Storage: $(storage_energy[l]) MWh");
+plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street: $(storage_energy[1]) MWh");

@@ -7,7 +7,7 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
 
     nlp_solver = IpoptSolver(print_level=0)
     # note: print_level changes the amount of solver information printed to the terminal
-    
+
     ###############################################################################
     # 1. Building the Optimal Power Flow Model
     ###############################################################################
@@ -158,7 +158,7 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
 
     # Generation Ramp rate limits
     for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
-        if t != t_start
+        if (t != t_start) && (ref[:nw][t][:gen][i]["ramp_agc"]!=0)
             @constraint(model, -ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60 <= pg[t,i]- pg[t-1,i] <= ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60)
         end
     end

@@ -7,14 +7,14 @@ clear all
 base_model  = case_ieee123();
 
 % load data
-load_fn = 'dataport-export (3).csv';
+load_fn = 'dataport-export (3) - Copy.csv';
 
 % output file name
 folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-steps = 20; %determined by max of this or pecan street data
+steps = 10; %determined by max of this or pecan street data
 
 % storage elements
 storageElements = 1;
@@ -62,7 +62,7 @@ for i = 1: length(out)
     loads(index1,index2) = [load{:}]; 
 end
 
-periods = min(steps, size(loads,1));
+periods = max(steps, size(loads,1));
 
 %% Modifier variables
 %	bus_i	type	Pd	Qd	    Gs	  Bs  area	Vm	Va	baseKV	zone	Vmax	Vmin
@@ -71,31 +71,27 @@ buses = zeros(size(loads,2),13);
 for i = 1: size(loads,2)
     buses(i,:) = bus;
     buses(i,1) = i;
-    if i == 1
-        buses(i,2) = 3;
-    end
 end
                                                                             % Change ramp rate here
 %  bus	Pg	Qg	Qmax	Qmin	Vg	mBase	status	Pmax	Pmin	Pc1	Pc2	Qc1min	Qc1max	Qc2min	Qc2max	ramp_agc	ramp_10	ramp_30	ramp_q	apf
 gen = [
-	1	17.0680	0	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
+	1	3	3	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
 ];
 
-%          fbus	tbus	r           x               b        rateA	rateB	rateC	ratio	angle	status	angmin	angmax
-branch = [	1	2	0.0013398623	0.0027450827	3.02770271595392E-008	100	100	100	0	0	1	-80	80	];
+%	fbus	tbus	r	x	b	rateA	rateB	rateC	ratio	angle	status	angmin	angmax
+branch = [
+	56	1	0.0013398623	0.0027450827	3.02770271595392E-008	100	100	100	0	0	1	-360	360	
+   ];
 branches = zeros(size(loads,2),13);
 for i = 1:size(loads,2)
    branches(i,:) = branch;
    if  i==1
        branches(i,1) = size(loads,2);
        branches(i,2) = 1;
-   else
-       branches(i,1) = i-1;
-       branches(i,2) = i;
    end
 end
     
-
+branches
 
  modifier.period(1).bus = buses;
  for i =1:periods
@@ -139,7 +135,7 @@ for i=1:periods
     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
     storage(5) ="mpc.storage = [";
     % Flywheel
-    storage(6) ="	 5            0.05     0.1          1             1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
+    storage(6) ="	 5            0.005     0.01          0.1             0.1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
     %
     storage(7) ="];";
 
