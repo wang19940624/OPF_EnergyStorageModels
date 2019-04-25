@@ -4,8 +4,8 @@ using Ipopt
 using JuMP
 using DelimitedFiles
 # function files
-#path = "C:/Users/Noah Rhodes/Git_Projects/Power Systems Research"
-path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
+path = "C:/Users/noahx23/Git_Projects/Power Systems Research"
+#path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
 
 
 include(string(path,"/functions/func_AC_OPF_CT_MP.jl"))
