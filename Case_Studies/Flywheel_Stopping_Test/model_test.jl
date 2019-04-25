@@ -2,41 +2,33 @@
 using PowerModels
 using Ipopt
 using JuMP
-
+using DelimitedFiles
 # function files
-include("../../functions/func_AC_OPF_CT_MP_0S.jl")
-include("../../functions/func_networkRead.jl")
-include("../../functions/plotting_functions.jl")
+#path = "C:/Users/Noah Rhodes/Git_Projects/Power Systems Research"
+path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
 
 
-path = "./ModelData/"
+include(string(path,"/functions/func_AC_OPF_CT_MP_0S.jl"))
+include(string(path,"/functions/func_networkRead.jl"))
+include(string(path,"/functions/plotting_functions.jl"))
+
+
+data_path = "./ModelData/"
+output_path = "./Output/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
 
-k = 1
-T = 1
-
-mp_data = func_networkRead(path,key,file_ext)
+mp_data = func_networkRead(data_path,key,file_ext)
 
 # # Add zeros to turn linear objective functions into quadratic ones
 # # so that additional parameter checks are not required
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
-
-
-losses = 0.1  #Losses are 10% per hour
-
-for l=1:length(losses)
-    println("Losses set to $(losses*100)%")
-    for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
-        mp_data["nw"][string(t)]["storage"][string(e)]["standby_loss"] = losses
-    end
-end
-
 #storage_energy = 10 .^(range(-2,stop=0,length=20)) #Energy storage from 0.01 MWh to 1 MWh
-storage_energy = 0.01 #MWh
-total_gen_cost = zeros(length(storage_energy))
-#for l = 1:length(storage_energy)
+storage_energy = 0.10 #MWh
+losses = 0.5 # 5% losses per hour
+#total_gen_cost = zeros(length(storage_energy))
+for l = 1:length(storage_energy)
     println("Energy Storage set to $(storage_energy[1]) MWh, Energy Power set to $(storage_energy[1]*10)")
     k = storage_energy[1]*10^2
     T = k
@@ -44,54 +36,42 @@ total_gen_cost = zeros(length(storage_energy))
         mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy[1]
     end
 
-## use build_ref to filter out inactive components
-#ref = PowerModels.build_ref(data)[:nw][0]
-ref = PowerModels.build_ref(mp_data)
-# note: ref contains all the relevant system parameters needed to build the OPF model
-# When we introduce constraints and variable bounds below, we use the parameters in ref.
+    println("Losses set to $(losses*100)%")
+    for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+        mp_data["nw"][string(t)]["storage"][string(e)]["standby_loss"] = losses
+    end
+
+    ## use build_ref to filter out inactive components
+    ref = PowerModels.build_ref(mp_data)
+    # note: ref contains all the relevant system parameters needed to build the OPF model
+    # When we introduce constraints and variable bounds below, we use the parameters in ref.
+
+    ######################
+    # Run AC analysis
+    ######################
+    results = func_AC_OPF_CT_MP_0S(ref, k, T)
+
+    # make generation and storage decisions for current time period
+    gen_cost = results["cost"];
+    for k in keys(ref[:nw]), i in keys(ref[:nw][k][:gen])
+        mp_data["nw"][string(k)]["gen"][string(i)]["pg"] = results["pg"][k,i]
+        mp_data["nw"][string(k)]["gen"][string(i)]["qg"] = results["qg"][k,i]
+    end
+    for k in keys(ref[:nw]), i in keys(ref[:nw][k][:storage])
+        mp_data["nw"][string(k)]["storage"][string(i)]["energy"] = results["es"][k,i]
+    end
 
 
-######################
-# Run AC analysis
-######################
-results = func_AC_OPF_CT_MP_0S(ref,k,T)
+    solved = PowerModels.build_ref(mp_data)
+    #total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+    println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t])))
 
-# make generation and storage decisions for current time period
-# println("Time period $(k) \$",results["cost"][1])
-gen_cost = results["cost"];
-for k in keys(ref[:nw]), i in keys(ref[:nw][k][:gen])
-    mp_data["nw"][string(k)]["gen"][string(i)]["pg"] = results["pg"][k,i]
-    mp_data["nw"][string(k)]["gen"][string(i)]["qg"] = results["qg"][k,i]
+    println("Making plots...")
+
+    plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
+    plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
+    plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
+    plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])",k,T)
+    plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
+
 end
-for k in keys(ref[:nw]), i in keys(ref[:nw][k][:storage])
-    mp_data["nw"][string(k)]["storage"][string(i)]["energy"] = results["es"][k,i]
-end
-
-
-solved = PowerModels.build_ref(mp_data)
-println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t])))
-
-println("Making plots...")
-
-plotGeneration(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotSoC(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotStoragePower(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotDemand(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-#plotGenCost(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotCTEnergyPower(solved, "Output/CT_AC_", "Flywheel Stop: 1% of charging power", k, T);
-
-
-# solved = PowerModels.build_ref(mp_data)
-# #total_gen_cost[l] = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
-# #println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t])))
-#
-# println("Making plots...")
-#
-# plotGeneration(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
-# plotSoC(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
-# plotStoragePower(ref, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
-#
-# #plotGenCost(gen_cost, string(output_path,"CT_AC_",storage_energy[l]));
-# plotCTEnergyPower(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh",k,T);
-#
-# plotDemand(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");

@@ -14,7 +14,7 @@ folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-steps = 20; %determined by max of this or pecan street data
+steps = 1440; %determined by max of this or pecan street data
 
 % storage elements
 storageElements = 1;
@@ -106,7 +106,7 @@ end
 
  for i =1:periods
      modifier.period(i).gen = gen;
-     modifier.period(i).gen(:,17) = 1;
+     modifier.period(i).gen(:,17) = 10;
  end
 
  

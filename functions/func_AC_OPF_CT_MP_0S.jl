@@ -58,7 +58,9 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
 #    @objective(model, Min,
 #        sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
 #    )
-    @objective(model, Min, 1)
+@objective(model, Min,
+    sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
+)
 
     # Add Constraints
     # ---------------
@@ -171,11 +173,12 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
             for e in ref[:nw][t][:bus_storage][i]
                 @NLconstraint(model, omega[t,e] == sqrt(es[t,e]/k))
-                @constraint(model, -T*omega[t,e] <= ps[t,e])
+                @constraint(model, -T*omega[t,e] -0.05*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
+                @constraint(model, ps[t,e] <= T*omega[t,e])
                 #@constraint(model, -T*omega[t,e] +  -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
                 #@constraint(model, -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k)*b2[t,e] <= ps[t,e])
                 #@constraint(model, b1[t,e]+b2[t,e] == 1)
-                @constraint(model, ps[t,e] <= T*omega[t,e])
+
             end
     end
 
