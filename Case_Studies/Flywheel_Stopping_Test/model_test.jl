@@ -22,6 +22,28 @@ mp_data = func_networkRead(path,key,file_ext)
 # # so that additional parameter checks are not required
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
+
+
+losses = 0.1  #Losses are 10% per hour
+
+for l=1:length(losses)
+    println("Losses set to $(losses*100)%")
+    for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+        mp_data["nw"][string(t)]["storage"][string(e)]["standby_loss"] = losses
+    end
+end
+
+#storage_energy = 10 .^(range(-2,stop=0,length=20)) #Energy storage from 0.01 MWh to 1 MWh
+storage_energy = 0.01 #MWh
+total_gen_cost = zeros(length(storage_energy))
+#for l = 1:length(storage_energy)
+    println("Energy Storage set to $(storage_energy[1]) MWh, Energy Power set to $(storage_energy[1]*10)")
+    k = storage_energy[1]*10^2
+    T = k
+    for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+        mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy[1]
+    end
+
 ## use build_ref to filter out inactive components
 #ref = PowerModels.build_ref(data)[:nw][0]
 ref = PowerModels.build_ref(mp_data)
@@ -51,9 +73,25 @@ println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for
 
 println("Making plots...")
 
-plotGeneration(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotSoC(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotStoragePower(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotDemand(ref, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotGenCost(gen_cost, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
-plotCTEnergyPower(solved, "Output/CT_AC_", "Flywheel Stop: 1% of charging power");
+plotGeneration(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotSoC(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotStoragePower(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotDemand(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+#plotGenCost(solved, "Output/CT_AC", "Flywheel Stop: 1% of charging power");
+plotCTEnergyPower(solved, "Output/CT_AC_", "Flywheel Stop: 1% of charging power", k, T);
+
+
+# solved = PowerModels.build_ref(mp_data)
+# #total_gen_cost[l] = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+# #println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t])))
+#
+# println("Making plots...")
+#
+# plotGeneration(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
+# plotSoC(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
+# plotStoragePower(ref, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");
+#
+# #plotGenCost(gen_cost, string(output_path,"CT_AC_",storage_energy[l]));
+# plotCTEnergyPower(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh",k,T);
+#
+# plotDemand(solved, string(output_path,"CT_AC_",l), "Storage: $(storage_energy[l]) MWh");

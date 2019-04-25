@@ -45,7 +45,8 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     # Energy storage reactive power
     @variable(model, ref[:nw][t][:storage][i]["qmin"] <= qs[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["qmax"])
     # Flywheel energy limits
-    @variable(model, 0.00*ref[:nw][t][:storage][i]["energy_rating"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+    #@variable(model, 0.00*ref[:nw][t][:storage][i]["energy_rating"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+    @variable(model, 0 <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
     # Linking flyhweel speed to energy storage
     @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]/k) )
 
@@ -170,8 +171,8 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
             for e in ref[:nw][t][:bus_storage][i]
                 @NLconstraint(model, omega[t,e] == sqrt(es[t,e]/k))
-                #@constraint(model, T*omega[t,e] <= ps[t,e])
-                @constraint(model, -T*omega[t,e] -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
+                @constraint(model, -T*omega[t,e] <= ps[t,e])
+                #@constraint(model, -T*omega[t,e] +  -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
                 #@constraint(model, -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k)*b2[t,e] <= ps[t,e])
                 #@constraint(model, b1[t,e]+b2[t,e] == 1)
                 @constraint(model, ps[t,e] <= T*omega[t,e])

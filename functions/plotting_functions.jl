@@ -146,15 +146,16 @@ function plotStoragePower(data, name, graphTitle, baseMVA=1,timesteps=length(col
     close("all")
 end
 
-function plotGenCost(data, name, graphTitle, baseMVA=1, timesteps=length(collect(keys(data))))
+#TODO make functional again (with solved data set)
+function plotGenCost(data, name, graphTitle, baseMVA=1, timesteps=length(collect(keys(data[:nw]))))
     ioff() # Interactive plotting OFF, necessary for inline plotting in IJulia
-    t_start = minimum(collect(keys(data)))
-    generators = length(collect(keys(data[t_start])))
+    t_start = minimum(collect(keys(data[:nw])))
+    generators = length(collect(keys(data[:nw][t_start])))
     x = zeros(generators, timesteps)
     y = zeros(generators, timesteps)
 
-    for i in sort(collect(keys(data[t_start])))
-        for t in sort(collect(keys(data)))
+    for i in sort(collect(keys(data[:nw][t_start])))
+        for t in sort(collect(keys(data[:nw])))
             if t<=timesteps
                 x[i,t] = t
                 y[i,t] = data[t][i]
