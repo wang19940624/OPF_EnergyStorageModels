@@ -60,6 +60,9 @@ for i = 1: length(out)
     index1 =  find(strcmp(dates, date));
     index2 = find(ids == [id{:}]);
     loads(index1,index2) = [load{:}]; 
+    if loads(index1,index2) == 0
+        loads(index1,index2) = 1e-10;
+    end
 end
 
 periods = min(steps, size(loads,1));

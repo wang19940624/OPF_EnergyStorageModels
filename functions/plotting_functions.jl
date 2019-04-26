@@ -43,8 +43,9 @@ function plotDemand(data, name, graphTitle, baseMVA=1,timesteps=length(collect(k
     x = zeros(loads, timesteps)
     y = zeros(loads, timesteps)
 
-    for i in sort(collect(keys(data[:nw][t_start][:load])))
+
         for t in sort(collect(keys(data[:nw])))
+            for i in sort(collect(keys(data[:nw][t][:load])))
             if t<=timesteps
                 x[i,t] = t
                 y[i,t] = data[:nw][t][:load][i]["pd"]*baseMVA
@@ -57,8 +58,10 @@ function plotDemand(data, name, graphTitle, baseMVA=1,timesteps=length(collect(k
     ################
     fig = figure(figsize=(8,8))
     b = bar(x[1,:],y[1,:], align="center",alpha=0.4)
-    for i = 2:loads
-        b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
+    for i in sort(collect(keys(data[:nw][t_start][:load])))
+        if i!= 1
+            b = bar(x[i,:],y[i,:], bottom=sum(y[k,:] for k=1:i-1), align="center",alpha=0.4)
+        end
     end
     axis("tight")
     title("Load $graphTitle")

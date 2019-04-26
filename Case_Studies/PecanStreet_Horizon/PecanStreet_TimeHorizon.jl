@@ -86,7 +86,7 @@ println("Cost of generation: \$", sum(gen_cost[t][i] for t in keys(gen_cost) for
 println("Making plots...")
 windowsSize = length(keys(mp_data["nw"]))-horizon
 plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street", 1, windowsSize);
-plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street", 1, 10);
+plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street", 1, windowsSize);
 plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street", 1, windowsSize);
 plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street",k,T, 1, windowsSize);
 plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street", 1, windowsSize);

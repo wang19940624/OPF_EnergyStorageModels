@@ -26,7 +26,7 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 
 #storage_energy = 10 .^(range(-2,stop=0,length=20)) #Energy storage from 0.01 MWh to 1 MWh
 storage_energy = 0.10 #MWh
-losses = 0.05 # 5% losses per hour
+losses = 0.10 # 10% losses per hour
 #total_gen_cost = zeros(length(storage_energy))
 for l = 1:length(storage_energy)
     println("Energy Storage set to $(storage_energy[1]) MWh, Energy Power set to $(storage_energy[1]*10)")
