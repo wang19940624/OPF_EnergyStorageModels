@@ -10,7 +10,7 @@ folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-periods = 500;
+periods = 10;
 
 % storage elements
 storageElements = 1;
@@ -140,24 +140,24 @@ for i=1:periods
     savecase(output, temp);
 
     % Append storage information to end of file
-    storage(1) ="     %% storage data";
-    storage(2) =" % hours;";
-    storage(3) ="mpc.time_elapsed = 0.0167";
-    storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
-    storage(5) ="mpc.storage = [";
-    % Flywheel
-    storage(6) ="	 11            0.005     0.01          0.1             0.1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
-    %
-    storage(7) ="];";
+     storage(1) ="     %% storage data";
+     storage(2) =" % hours;";
+     storage(3) ="mpc.time_elapsed = 0.0167";
+%      storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
+%      storage(5) ="mpc.storage = [";
+%      % Flywheel
+%      storage(6) ="	 1            0.01     0.10          0.10             0.10                 0.95                0.95                   100.0        -50.0 70.0  0.1 0.0	0.01         1;";
+%      %
+%      storage(7) ="];";
+ 
+     fid = fopen(strcat(output,".m"), 'at');
+     for k =1:length(storage)
+         fprintf(fid,'%s\n',storage(k));
+     end
+     fclose(fid);
 
-    fid = fopen(strcat(output,".m"), 'at');
-    for k =1:length(storage)
-        fprintf(fid,'%s\n',storage(k));
-    end
-    fclose(fid);
 
-
-% % Append storage information to end of file
+ % Append storage information to end of file
 %     storage(1) ="     %% storage data";
 %     storage(2) =" % hours;";
 %     storage(3) ="mpc.time_elapsed = 1.0";

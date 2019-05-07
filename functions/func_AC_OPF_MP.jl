@@ -183,7 +183,8 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
         "cost" => Dict(t => Dict(i => sum(gen["cost"][1]*getvalue(pg[t,i])^2 + gen["cost"][2]*getvalue(pg[t,i]) + gen["cost"][3]) for (i,gen) in ref[:nw][t][:gen]) for t in keys(ref[:nw])),
         "pg" => getvalue(pg),
         "qg" => getvalue(qg),
-        "es" => getvalue(es)
+        "es" => getvalue(es),
+        "ps" => getvalue(ps)
     )
 
 
