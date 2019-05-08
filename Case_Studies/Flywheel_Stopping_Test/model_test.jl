@@ -4,8 +4,8 @@ using Ipopt
 using JuMP
 using DelimitedFiles
 # function files
-path = "C:/Users/noahx23/Git_Projects/Power Systems Research"
-#path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
+#path = "C:/Users/noahx23/Git_Projects/Power Systems Research"
+path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
 
 
 include(string(path,"/functions/func_AC_OPF_CT_MP_0S.jl"))
@@ -68,10 +68,10 @@ for l = 1:length(storage_energy)
 
     println("Making plots...")
 
-    plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
-    plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
-    plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
-    plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])",k,T)
-    plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street Full $([l])")
+    plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street Full Horizon - Allow Stop $([l])")
+    plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street Full - Allow Stop $([l])")
+    plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street Full - Allow Stop $([l])")
+    plotCTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full - Allow Stop $([l])",k,T)
+    plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street Full - Allow Stop $([l])")
 
 end
