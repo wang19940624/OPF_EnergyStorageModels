@@ -18,11 +18,13 @@ include(string(path,"/functions/plotting_functions.jl"))
 ## Read data ##
 ###############
 data_path = "./ModelData - Storage/"
-output_path = "./Output_ACOPF - Batt - Full/"
+output_path = "./Output_ACOPF - Batt - Limited/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
+horizon = 5
 mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
+
 
 ###########################
 ## Modify Storage Values ##
@@ -54,31 +56,46 @@ for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
 end
 
 
-#################################################
-## build_ref to filter out inactive components ##
-#################################################
-ref = PowerModels.build_ref(mp_data)
+####################################
+## build network based on horizon ##
+####################################
+gen_cost = Dict(t => Dict() for t = 1:length(keys(mp_data["nw"]))-horizon)
+for c=1:length(keys(mp_data["nw"]))-horizon
+    global horizon_data = Dict{String,Any}(
+            "name" => "Period $(c)",
+            "multinetwork" => true,
+            "per_unit" => mp_data["per_unit"],
+            "baseMVA" => mp_data["baseMVA"],
+            "nw" =>  Dict{String,Any}()
+        )
+    for w=c:c+horizon -1
+        horizon_data["nw"][string(w)] = mp_data["nw"][string(w)]
+    end
+    ref = PowerModels.build_ref(horizon_data)
 
+    # compute optimization
+    results = func_AC_OPF_MP(ref, c, horizon)
 
-######################
-# Run AC analysis
-######################
-results = func_AC_OPF_MP(ref)
+    ####################################################
+    ## Save generation/storage decisions into mp_data ##
+    ####################################################
+    println("Time period $(c), Generation cost is: \$", sum(results["cost"][c][i] for i in keys(results["cost"][c])))
+    gen_cost[c] = results["cost"][c]
+    for i in keys(ref[:nw][c][:gen])
+        mp_data["nw"][string(c+1)]["gen"][string(i)]["pg"] = results["pg"][c,i] #save generation value for ramp rates in next time step
+        mp_data["nw"][string(c)]["gen"][string(i)]["pg"] = results["pg"][c,i] #save generation for current output
+        mp_data["nw"][string(c+1)]["gen"][string(i)]["qg"] = results["qg"][c+1,i]
+    end
+    for i in keys(ref[:nw][c][:storage])
+        mp_data["nw"][string(c+1)]["storage"][string(i)]["energy"] = results["es"][c,i] #save current battery level for future teim step
+        mp_data["nw"][string(c)]["storage"][string(i)]["energy"] = results["es"][c,i] #save battery level for output
+    end
 
-####################################################
-## Save generation/storage decisions into mp_data ##
-####################################################
-gen_cost = results["cost"];
-for k in keys(ref[:nw]), i in keys(ref[:nw][k][:gen])
-    mp_data["nw"][string(k)]["gen"][string(i)]["pg"] = results["pg"][k,i]
-    mp_data["nw"][string(k)]["gen"][string(i)]["qg"] = results["qg"][k,i]
 end
-for k in keys(ref[:nw]), i in keys(ref[:nw][k][:storage])
-    mp_data["nw"][string(k)]["storage"][string(i)]["energy"] = results["es"][k,i]
-    mp_data["nw"][string(k)]["storage"][string(i)]["energy"] = results["es"][k,i]
-end
+
 
 solved = PowerModels.build_ref(mp_data)
+
 
 ##########################
 ##   Analysis Results   ##
@@ -123,8 +140,9 @@ end
 ## Create Figures ##
 ####################
 println("Making plots...")
-plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
-plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
-plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
-plotBTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full ACOPF")
-plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
+baseMVA = mp_data["baseMVA"]
+plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
+plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
+plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
+plotBTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full ACOPF",baseMVA, horizon)
+plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
