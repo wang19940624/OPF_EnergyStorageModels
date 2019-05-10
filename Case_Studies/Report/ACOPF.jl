@@ -6,6 +6,7 @@ using PowerModels
 using Ipopt
 using JuMP
 using DelimitedFiles
+
 # function files
 path = "C:/Users/noahx23/Git_Projects/Power Systems Research"
 #path = "C:/Users/Noah Rhodes/Git_Projects/Power_Models_Research"
@@ -73,7 +74,7 @@ for i in sort(collect(keys(solved[:nw][t_start][:storage])))
         if t == t_start
             power_cycles[i,t] = 0
         elseif t<=timesteps
-            power_cycles[i,t] = (solved[:nw][t][:storage][i]["energy"]-solved[:nw][t-1][:storage][i]["energy"])/solved[:nw][t][:storage][i]["energy_storage"]
+            power_cycles[i,t] = (solved[:nw][t][:storage][i]["energy"]-solved[:nw][t-1][:storage][i]["energy"])/solved[:nw][t][:storage][i]["energy_rating"]
         end
     end
 end

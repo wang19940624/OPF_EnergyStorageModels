@@ -7,14 +7,14 @@ clear all
 base_model  = case_ieee123();
 
 % load data
-load_fn = 'dataport-export (3).csv';
+load_fn = 'dataport-export-large.csv';
 
 % output file name
 folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-steps = 10; %determined by min of this or pecan street data
+steps = 1000; %determined by min of this or pecan street data
 
 % storage elements
 storageElements = 1;
@@ -49,7 +49,7 @@ out = table2cell(out);
 
 dates = unique({out{:,1}});
 ids = unique([out{:,2}]);
-loads = zeros(length(dates),length(ids));
+loads = ones(length(dates),length(ids))*1e-10;
 
 
 for i = 1: length(out)
@@ -59,7 +59,8 @@ for i = 1: length(out)
     
     index1 =  find(strcmp(dates, date));
     index2 = find(ids == [id{:}]);
-    loads(index1,index2) = [load{:}]; 
+ 
+    loads(index1,index2) = [load{:}]/1000; %convert p.u. from KW to MW 
     if loads(index1,index2) == 0
         loads(index1,index2) = 1e-10;
     end
@@ -81,7 +82,13 @@ end
                                                                             % Change ramp rate here
 %  bus	Pg	Qg	Qmax	Qmin	Vg	mBase	status	Pmax	Pmin	Pc1	Pc2	Qc1min	Qc1max	Qc2min	Qc2max	ramp_agc	ramp_10	ramp_30	ramp_q	apf
 gen = [
-	1	17.0680	0	200	-200	1	1	1	200	-200	0	0	0	0	0	0	0	0	0	0	0;
+	1	17.0680	0	200	-200	1	1        1      200     -200  	0	0	0	0	0	0	0	0	0	0	0;
+];
+
+%	1	startup	shutdown	n	x1	y1	...	xn	yn
+%	2	startup	shutdown	n	c(n-1)	...	c0
+gencost = [
+	2	0	0	3	0.01	40	0;
 ];
 
 %          fbus	tbus	r           x               b        rateA	rateB	rateC	ratio	angle	status	angmin	angmax
@@ -92,13 +99,15 @@ for i = 1:size(loads,2)
    if  i==1
        branches(i,1) = size(loads,2);
        branches(i,2) = 1;
+   elseif i == round(size(loads,2)/2)
+       branches(i,1) = size(loads,2);
+       branches(i,2) = i;
    else
        branches(i,1) = i-1;
        branches(i,2) = i;
    end
 end
     
-
 
  modifier.period(1).bus = buses;
  for i =1:periods
@@ -108,10 +117,18 @@ end
  end
 
  for i =1:periods
-     modifier.period(i).gen = gen;
+      modifier.period(i).gen = gen;
+     if  i==1
+        modifier.period(i).gen(:,2) = sum(loads(1,:));
+     else
      modifier.period(i).gen(:,17) = 10;
+     end
  end
-
+ 
+ for i =1:periods
+     modifier.period(i).gencost = gencost;
+     modifier.period(i).gencost(:,5) = 0.1;
+ end
  
 for i =1:periods
      modifier.period(i).branch = branches;

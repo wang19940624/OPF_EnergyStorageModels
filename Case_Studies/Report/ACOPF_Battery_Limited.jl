@@ -21,7 +21,7 @@ data_path = "./ModelData - Storage/"
 output_path = "./Output_ACOPF - Batt - Limited/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
-horizon = 5
+horizon = 60
 mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
@@ -29,19 +29,26 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 ###########################
 ## Modify Storage Values ##
 ###########################
-storage_energy = 0.10 #MWh
-storage_power = 0.10 #MW
-stdby_losses = 0.000425 # 1% losses per day
+storage_energy_rating = 0.010 #MWh
+storage_energy = 0.005 #MWh
+storage_power_rating = 0.010 #MW
+stdby_losses = 6.944e-6 # 1% losses per day
 charge_losses = 0.95 # 95% charge and discharge efficiency
+
+println("Energy Storage Rating set to $(storage_energy_rating) MWh")
+for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+    mp_data["nw"][string(t)]["storage"][string(e)]["energy_rating"] = storage_energy_rating
+end
 
 println("Energy Storage set to $(storage_energy) MWh")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
-    mp_data["nw"][string(t)]["storage"][string(e)]["energy_storage"] = storage_energy
+    mp_data["nw"][string(t)]["storage"][string(e)]["energy"] = storage_energy
 end
 
-println("Energy Power set to $(storage_power) MW")
+println("Energy Power Rating set to $(storage_power_rating) MW")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
-    mp_data["nw"][string(t)]["storage"][string(e)]["energy_rating"] = storage_power
+    mp_data["nw"][string(t)]["storage"][string(e)]["charge_rating"] = storage_power_rating
+    mp_data["nw"][string(t)]["storage"][string(e)]["discharge_rating"] = storage_power_rating
 end
 
 println("Standby Losses set to $(stdby_losses*100)%")
@@ -54,6 +61,7 @@ for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
     mp_data["nw"][string(t)]["storage"][string(e)]["charge_efficiency"] = charge_losses
     mp_data["nw"][string(t)]["storage"][string(e)]["discharge_efficiency"] = charge_losses
 end
+
 
 
 ####################################
@@ -71,9 +79,15 @@ for c=1:length(keys(mp_data["nw"]))-horizon
     for w=c:c+horizon -1
         horizon_data["nw"][string(w)] = mp_data["nw"][string(w)]
     end
+
+    #################################################
+    ## build_ref to filter out inactive components ##
+    #################################################
     ref = PowerModels.build_ref(horizon_data)
 
-    # compute optimization
+    ######################
+    # Run AC analysis
+    ######################
     results = func_AC_OPF_MP(ref, c, horizon)
 
     ####################################################
@@ -104,8 +118,8 @@ solved = PowerModels.build_ref(mp_data)
 ##########################
 total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
 
-timesteps=length(collect(keys(solved[:nw])))
 t_start = minimum(collect(keys(solved[:nw])))
+timesteps=length(collect(keys(solved[:nw]))) - horizon
 storage = length(collect(keys(solved[:nw][t_start][:storage])))
 power_cycles = zeros(storage, timesteps)
 cycles = zeros(storage)
@@ -114,12 +128,12 @@ for i in sort(collect(keys(solved[:nw][t_start][:storage])))
         if t == t_start
             power_cycles[i,t] = 0
         elseif t<=timesteps
-            power_cycles[i,t] = (solved[:nw][t][:storage][i]["energy"]-solved[:nw][t-1][:storage][i]["energy"])/solved[:nw][t][:storage][i]["energy_storage"]
+            power_cycles[i,t] = (solved[:nw][t][:storage][i]["energy"]-solved[:nw][t-1][:storage][i]["energy"])/solved[:nw][t][:storage][i]["energy_rating"]
         end
     end
 end
 for i in sort(collect(keys(solved[:nw][t_start][:storage])))
-    cycles[i] = sum(abs.(power_cycles[i,t]) for t in keys(solved[:nw]))/2
+    cycles[i] = sum(abs.(power_cycles[i,t]) for t = t_start:timesteps)/2
 end
 
 # write analysis data to file
@@ -141,8 +155,9 @@ end
 ####################
 println("Making plots...")
 baseMVA = mp_data["baseMVA"]
-plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
-plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
-plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
-plotBTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full ACOPF",baseMVA, horizon)
-plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, horizon)
+
+plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+plotBTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full ACOPF",baseMVA, timesteps)
+plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
