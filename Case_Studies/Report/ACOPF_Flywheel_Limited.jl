@@ -31,6 +31,7 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 ###########################
 storage_energy_rating = 0.010 #MWh
 storage_energy = 0.005 #MWh
+storage_energy_min = 0.25 # 25% minimum SoC
 storage_power_rating = 0.10 #MW
 stdby_losses = 6.944e-6 # 1% losses per day
 charge_losses = 0.95 # 95% charge and discharge efficiency
@@ -43,6 +44,11 @@ end
 println("Energy Storage set to $(storage_energy) MWh")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
     mp_data["nw"][string(t)]["storage"][string(e)]["energy"] = storage_energy
+end
+
+println("Energy Storage Minimum SoC set to $(storage_energy_min) MWh")
+for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
+    mp_data["nw"][string(t)]["storage"][string(e)]["energy_min"] = storage_energy_min*storage_energy
 end
 
 println("Energy Power Rating set to $(storage_power_rating) MW")

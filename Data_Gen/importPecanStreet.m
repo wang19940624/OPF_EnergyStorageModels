@@ -88,7 +88,7 @@ gen = [
 %	1	startup	shutdown	n	x1	y1	...	xn	yn
 %	2	startup	shutdown	n	c(n-1)	...	c0
 gencost = [
-	2	0	0	3	0.01	40	0;
+	2	0	0	3  0.05  40  0;
 ];
 
 %          fbus	tbus	r           x               b        rateA	rateB	rateC	ratio	angle	status	angmin	angmax
@@ -127,7 +127,8 @@ end
  
  for i =1:periods
      modifier.period(i).gencost = gencost;
-     modifier.period(i).gencost(:,5) = 0.1;
+     modifier.period(i).gencost(:,5) = 1;
+     modifier.period(i).gencost(:,6) = 1;
  end
  
 for i =1:periods

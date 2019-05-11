@@ -39,7 +39,7 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
     # Add storage power variables
     @variable(model, -ref[:nw][t][:storage][i]["discharge_rating"] <= ps[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["discharge_rating"] )
     @variable(model, ref[:nw][t][:storage][i]["qmin"] <= qs[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["qmax"])
-    @variable(model, 0 <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+    @variable(model, ref[:nw][t][:storage][i]["energy_min"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
 
 
     # Add Objective Function
@@ -48,13 +48,8 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
     # Minimize cost power generation
     # assumes costs are given as quadratic functions
     # create a slack variable for l1 norm of generation
-    @variable(model, z[t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])])
-    for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
-        @constraint(model, z[t,i] >= pg[t,i])
-        @constraint(model, z[t,i] >= -pg[t,i])
-    end
     @objective(model, Min,
-        sum(gen["cost"][1]*z[t,i]^2 + gen["cost"][2]*z[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
+        sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
     )
 
     # Add Constraints

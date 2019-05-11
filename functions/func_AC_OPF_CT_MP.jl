@@ -43,7 +43,7 @@ function func_AC_OPF_CT_MP(ref, k=1, T=1, t_start=1, horizon=maximum(collect(key
     #TODO adjust bounds for energy/power to fit with flywheel equations
     @variable(model, ps[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])])
     @variable(model, ref[:nw][t][:storage][i]["qmin"] <= qs[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["qmax"])
-    @variable(model, 0.05*ref[:nw][t][:storage][i]["energy_rating"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+    @variable(model, ref[:nw][t][:storage][i]["energy_min"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
     @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]/k) )
 
     # Add Objective Function

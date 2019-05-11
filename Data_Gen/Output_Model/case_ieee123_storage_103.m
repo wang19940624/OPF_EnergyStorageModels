@@ -247,7 +247,7 @@ mpc.branch = [
 %	1	startup	shutdown	n	x1	y1	...	xn	yn
 %	2	startup	shutdown	n	c(n-1)	...	c0
 mpc.gencost = [
-	2	0	0	3	0.1	40	0;
+	2	0	0	3	1	1	0;
 ];
      %% storage data
  % hours;
