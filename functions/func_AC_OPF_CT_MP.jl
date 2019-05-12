@@ -49,11 +49,8 @@ function func_AC_OPF_CT_MP(ref, k=1, T=1, t_start=1, horizon=maximum(collect(key
 
     # Minimize cost power generation
     # assumes costs are given as quadratic functions
-    # @objective(model, Min,
-    #     sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
-    # )
     @objective(model, Min, 0
-        #sum(gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
+        #sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
     )
     # Add Constraints
     # ---------------
@@ -176,8 +173,6 @@ function func_AC_OPF_CT_MP(ref, k=1, T=1, t_start=1, horizon=maximum(collect(key
             @constraint(model, omega[t,e]^2*k == es[t,e])
             @constraint(model, -T*omega[t,e] <= ps[t,e])
             @constraint(model, ps[t,e] <= T*omega[t,e])
-            #@constraint(model, -0.010 <= ps[t,e])
-            #@constraint(model, ps[t,e] <= 0.010)
         end
     end
 

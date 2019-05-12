@@ -43,7 +43,7 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     # Flywheel energy limits
     @variable(model, ref[:nw][t][:storage][i]["energy_min"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
     # Linking flyhweel speed to energy storage
-    @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]*1e6/k) )
+    @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]/k) )
 
     # Add Objective Function
     # ----------------------
@@ -163,9 +163,10 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     # Storage Energy Constant Torque constraints
     for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
         for e in ref[:nw][t][:bus_storage][i]
-            @NLconstraint(model, omega[t,e] == sqrt(es[t,e]*1e6/k))
-            @constraint(model, -T*omega[t,e]/1e6 -.5*T*sqrt(ref[:nw][t][:storage][e]["energy_rating"]*1e6/k)/1e6 <= ps[t,e])
-            @constraint(model, ps[t,e] <= T*omega[t,e]/1e6)
+            #@constraint(model, -T*omega[t,e]/1e6 -.05*T*sqrt(ref[:nw][t][:storage][e]["energy_rating"]*1e6/k)/1e6 <= ps[t,e])
+            @constraint(model, omega[t,e]^2*k == es[t,e])
+            @constraint(model, -T*omega[t,e] -.05*T*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k)<= ps[t,e])
+            @constraint(model, ps[t,e] <= T*omega[t,e])
         end
     end
 

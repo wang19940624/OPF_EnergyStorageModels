@@ -39,8 +39,10 @@ charge_losses = 0.95 # 95% charge and discharge efficiency
 # Flywheel Parameters
 # assume omega  = 10,000 rpm
 baseMVA = mp_data["baseMVA"]
-T = storage_power_rating*baseMVA*1e6/10e3*2 #power defined @ 25% speed. At 100% speed max power doubles
-k = storage_energy_rating*baseMVA*1e6/(10e3)^2
+#T = storage_power_rating*baseMVA*1e6/10e3*2 #power defined @ 25% speed. At 100% speed max power doubles
+#k = storage_energy_rating*baseMVA*1e6/(10e3)^2
+T = storage_power_rating*baseMVA*10
+k = storage_energy_rating*baseMVA*10
 
 println("Energy Storage Rating set to $(storage_energy_rating) MWh")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])

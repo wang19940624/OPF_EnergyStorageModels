@@ -31,7 +31,7 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 ###########################
 storage_energy_rating = 0.010 #MWh
 storage_energy = 0.005 #MWh
-storage_energy_min = 0.10 # 25% minimum SoC
+storage_energy_min = 0.25 # 25% minimum SoC
 storage_power_rating = 0.010 #MW
 stdby_losses = 0.10 # 10% losses per hour
 charge_losses = 0.95 # 95% charge and discharge efficiency
@@ -39,8 +39,10 @@ charge_losses = 0.95 # 95% charge and discharge efficiency
 # Flywheel Parameters
 # assume omega  = 10,000 rpm
 baseMVA = mp_data["baseMVA"]
-T = storage_power_rating*baseMVA*1e6/10e3*2 #power defined @ 25% speed. At 100% speed max power doubles
-k = storage_energy_rating*baseMVA*1e6/(10e3)^2
+#T = storage_power_rating*baseMVA*1e6/10e3*2 #power defined @ 25% speed. At 100% speed max power doubles
+#k = storage_energy_rating*baseMVA*1e6/(10e3)^2
+T = storage_power_rating*baseMVA*10
+k = storage_energy_rating*baseMVA*10
 
 println("Energy Storage Rating set to $(storage_energy_rating) MWh")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
