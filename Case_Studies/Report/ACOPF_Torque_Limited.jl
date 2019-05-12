@@ -21,8 +21,7 @@ data_path = "./ModelData - Storage/"
 output_path = "./Output_ACOPF - Torque - Limited/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
-#horizon = 60
-horizon = 10
+horizon = 60
 mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
 

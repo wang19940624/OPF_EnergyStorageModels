@@ -1,2 +1,2 @@
-Cost of Electricity Generation: $0.2950266082644337 
-Storage device [1] Charge Cycles: 0.008855056003832535 
+Cost of Electricity Generation: $-6.172297554365956 
+Storage device [1] Charge Cycles: 2.9350850437810383 
