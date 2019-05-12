@@ -41,7 +41,9 @@ ref = PowerModels.build_ref(mp_data)
 ######################
 # Run AC analysis
 ######################
-results = func_AC_OPF_MP(ref)
+#results = func_AC_OPF_MP(ref)
+dataLength = length(keys(ref[:nw]))
+results = func_AC_OPF_MP(ref, 1, dataLength-horizon)
 
 ####################################################
 ## Save generation/storage decisions into mp_data ##
@@ -63,7 +65,9 @@ solved = PowerModels.build_ref(mp_data)
 ## - Cost of Generation ##
 ## - Charge Cycles      ##
 ##########################
-total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+#total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+total_gen_cost = sum(gen_cost[t][i] for t=1:length(keys(gen_cost))-horizon for i in keys(gen_cost[t]))
+
 
 timesteps=length(collect(keys(solved[:nw])))
 t_start = minimum(collect(keys(solved[:nw])))
@@ -106,4 +110,4 @@ println("Storage Cycles: No Storage Devices")
 println("Making plots...")
 baseMVA = mp_data["baseMVA"]
 plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
-plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+#plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
