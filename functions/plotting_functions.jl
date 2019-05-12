@@ -133,7 +133,7 @@ function plotStoragePower(data, name, graphTitle, baseMVA=1,timesteps=length(col
                     y[i,t] = 0
                 elseif t<=timesteps
                     x[i,t] = t
-                    y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
+                    y[i,t] = -(data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
                 end
             end
         end
@@ -217,7 +217,7 @@ function plotFWEnergyPower(data, name, graphTitle, k=1, T=1, baseMVA=1,timesteps
                     y[i,t] = 0
                 elseif t<=timesteps
                     x[i,t] = data[:nw][t][:storage][i]["energy"]*baseMVA
-                    y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
+                    y[i,t] = -(data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
                 end
             end
         end
@@ -235,7 +235,7 @@ function plotFWEnergyPower(data, name, graphTitle, k=1, T=1, baseMVA=1,timesteps
         ## Operating Boundry ##
         #######################
         omega =  collect(LinRange(0.00,sqrt(data[:nw][t_start][:storage][1]["energy_rating"]/k),25))
-        E = k.*omega.^2
+        E = k.*(omega).^2
         Phigh = T.*omega*data[:nw][t_start][:storage][1]["charge_efficiency"]
         maxE = range(maximum(E),stop=maximum(E), length=10)
         maxP = range(-maximum(Phigh), stop=maximum(Phigh), length=10)
@@ -290,7 +290,7 @@ function plotBTEnergyPower(data, name, graphTitle, baseMVA=1,timesteps=length(co
                     y[i,t] = 0
                 elseif t<=timesteps
                     x[i,t] = data[:nw][t][:storage][i]["energy"]*baseMVA
-                    y[i,t] = (data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
+                    y[i,t] = -(data[:nw][t][:storage][i]["energy"]-data[:nw][t-1][:storage][i]["energy"])/data[:nw][t][:time_elapsed]*baseMVA
                 end
             end
         end

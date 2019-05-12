@@ -1,0 +1,2 @@
+Cost of Electricity Generation: $NaN 
+Storage device [1] Charge Cycles: NaN 

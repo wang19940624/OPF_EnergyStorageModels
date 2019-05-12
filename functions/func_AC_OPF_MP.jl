@@ -47,7 +47,6 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
 
     # Minimize cost power generation
     # assumes costs are given as quadratic functions
-    # create a slack variable for l1 norm of generation
     @objective(model, Min,
         sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
     )
@@ -140,13 +139,14 @@ function func_AC_OPF_MP(ref, t_start=1, horizon=maximum(collect(keys(ref[:nw])))
         if t == t_start
             # Initial Energy Constraint
             for e in ref[:nw][t][:bus_storage][i]
-                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]*(1-ref[:nw][t][:storage][e]["standby_loss"]) - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["energy"]*ref[:nw][t][:storage][e]["standby_loss"] + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
             end
 
         else
             # Energy Balance Constraint
             for e in ref[:nw][t][:bus_storage][i]
-                @constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"]) - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                #@constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"])*ref[:nw][t][:time_elapsed]* - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(es[t-1,e]*ref[:nw][t][:storage][e]["standby_loss"] + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
             end
         end
         if t == t_start + horizon - 1 # index of final time period

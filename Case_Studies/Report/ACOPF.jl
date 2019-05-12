@@ -21,6 +21,8 @@ data_path = "./ModelData/"
 output_path = "./Output_ACOPF/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
+#horizon = 60
+horizon = 5
 mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
 
@@ -103,5 +105,6 @@ println("Storage Cycles: No Storage Devices")
 ## Create Figures ##
 ####################
 println("Making plots...")
-plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
-plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF")
+baseMVA = mp_data["baseMVA"]
+plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)

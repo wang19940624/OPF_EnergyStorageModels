@@ -1,12 +1,11 @@
-using JuMP, Ipopt, PowerModels#, Juniper, MathOptInterface
+using JuMP, Ipopt, PowerModels
 
 function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(keys(ref[:nw]))))
 
     # Instancate a Solver
     #--------------------
 
-    solver = IpoptSolver(print_level=0)
-    #solver = JuniperSolver(IpoptSolver(print_level=0))
+    nlp_solver = IpoptSolver(print_level=0)
     # note: print_level changes the amount of solver information printed to the terminal
 
     ###############################################################################
@@ -15,7 +14,7 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
 
     # Initialize a JuMP Optimization Model
     #-------------------------------------
-    model = Model(solver = solver)
+    model = Model(solver = nlp_solver)
 
 
     # Add Optimization and State Variables
@@ -39,28 +38,21 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
 
     # Add storage power variables
     @variable(model, ps[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])])
-    # Binary SOS1 constraints for flywheel Power
-    #@variable(model, b1[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
-    #@variable(model, b2[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])], Bin)
     # Energy storage reactive power
     @variable(model, ref[:nw][t][:storage][i]["qmin"] <= qs[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["qmax"])
     # Flywheel energy limits
-    #@variable(model, 0.00*ref[:nw][t][:storage][i]["energy_rating"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
-    @variable(model, 0 <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
+    @variable(model, ref[:nw][t][:storage][i]["energy_min"] <= es[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= ref[:nw][t][:storage][i]["energy_rating"] )
     # Linking flyhweel speed to energy storage
-    @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]/k) )
+    @variable(model, 0 <= omega[t in keys(ref[:nw]), i in keys(ref[:nw][t][:storage])] <= sqrt(ref[:nw][t][:storage][i]["energy_rating"]*1e6/k) )
 
     # Add Objective Function
     # ----------------------
 
     # Minimize cost power generation
     # assumes costs are given as quadratic functions
-#    @objective(model, Min,
-#        sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
-#    )
-@objective(model, Min,
-    sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
-)
+    @objective(model, Min,
+        sum(gen["cost"][1]*pg[t,i]^2 + gen["cost"][2]*pg[t,i] + gen["cost"][3] for t in keys(ref[:nw]), (i,gen) in ref[:nw][t][:gen])
+    )
 
     # Add Constraints
     # ---------------
@@ -150,8 +142,7 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
         if t == t_start
             # Initial Energy Constraint
             for e in ref[:nw][t][:bus_storage][i]
-                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["energy"]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
-                #@constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"]* - ps[t,e]*ref[:nw][t][:time_elapsed]*ref[:nw][t][:storage][e]["charge_efficiency"])
+                @constraint(model, es[t,e] == ref[:nw][t][:storage][e]["energy"] - ref[:nw][t][:time_elapsed]*(ref[:nw][t][:storage][e]["energy"]*ref[:nw][t][:storage][e]["standby_loss"] + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
             end
 
         else
@@ -159,7 +150,7 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
             for e in ref[:nw][t][:bus_storage][i]
                 #@constraint(model, es[t,e] == es[t-1,e]*(1-ref[:nw][t][:storage][e]["standby_loss"]*ref[:nw][t][:time_elapsed]/k) - ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]*ref[:nw][t][:time_elapsed])
                 #TODO  verify this is correct (does standby multiply current energy?)
-                @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(es[t-1,e]*ref[:nw][t][:storage][e]["standby_loss"]/k + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
+                @constraint(model, es[t,e] == es[t-1,e] - ref[:nw][t][:time_elapsed]*(es[t-1,e]*ref[:nw][t][:storage][e]["standby_loss"] + ps[t,e]*ref[:nw][t][:storage][e]["charge_efficiency"]))
             end
         end
         if t == t_start + horizon - 1 # index of final time period
@@ -171,23 +162,21 @@ function func_AC_OPF_CT_MP_0S(ref, k=1, T=1, t_start=1, horizon=maximum(collect(
     end
     # Storage Energy Constant Torque constraints
     for t in keys(ref[:nw]), (i,bus) in ref[:nw][t][:bus]
-            for e in ref[:nw][t][:bus_storage][i]
-                @NLconstraint(model, omega[t,e] == sqrt(es[t,e]/k))
-                @constraint(model, -T*omega[t,e] -0.05*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
-                @constraint(model, ps[t,e] <= T*omega[t,e])
-                #@constraint(model, -T*omega[t,e] +  -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k) <= ps[t,e])
-                #@constraint(model, -0.01*sqrt(ref[:nw][t][:storage][e]["energy_rating"]/k)*b2[t,e] <= ps[t,e])
-                #@constraint(model, b1[t,e]+b2[t,e] == 1)
-
-            end
+        for e in ref[:nw][t][:bus_storage][i]
+            @NLconstraint(model, omega[t,e] == sqrt(es[t,e]*1e6/k))
+            @constraint(model, -T*omega[t,e]/1e6 -.5*T*sqrt(ref[:nw][t][:storage][e]["energy_rating"]*1e6/k)/1e6 <= ps[t,e])
+            @constraint(model, ps[t,e] <= T*omega[t,e]/1e6)
+        end
     end
 
 
 
     # Generation Ramp rate limits
     for t in keys(ref[:nw]), i in keys(ref[:nw][t][:gen])
-        if t != t_start
+        if (t != t_start) && (ref[:nw][t][:gen][i]["ramp_agc"]!=0)
             @constraint(model, -ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60 <= pg[t,i]- pg[t-1,i] <= ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60)
+        else
+            @constraint(model, -ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60 <= pg[t,i] - ref[:nw][t][:gen][i]["pg"] <= ref[:nw][t][:gen][i]["ramp_agc"]*ref[:nw][t][:time_elapsed]*60)
         end
     end
 

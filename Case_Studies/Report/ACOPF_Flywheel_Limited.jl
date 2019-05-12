@@ -18,13 +18,13 @@ include(string(path,"/functions/plotting_functions.jl"))
 ## Read data ##
 ###############
 data_path = "./ModelData - Storage/"
-output_path = "./Output_ACOPF - Batt - Limited/"
+output_path = "./Output_ACOPF - Flywheel - Limited/"
 key = "case_ieee123_storage_"
 file_ext = ".m"
-horizon = 60
+#horizon = 60
+horizon = 10
 mp_data = func_networkRead(data_path,key,file_ext)
 PowerModels.standardize_cost_terms(mp_data, order=2)
-
 
 ###########################
 ## Modify Storage Values ##
@@ -32,9 +32,15 @@ PowerModels.standardize_cost_terms(mp_data, order=2)
 storage_energy_rating = 0.010 #MWh
 storage_energy = 0.005 #MWh
 storage_energy_min = 0.25 # 25% minimum SoC
-storage_power_rating = 0.10 #MW
-stdby_losses = 6.944e-6 # 1% losses per day
+storage_power_rating = 0.010 #MW
+stdby_losses = 0.10 # 10% losses per hour
 charge_losses = 0.95 # 95% charge and discharge efficiency
+
+# Flywheel Parameters
+# assume omega  = 10,000 rpm
+baseMVA = mp_data["baseMVA"]
+T = storage_power_rating*baseMVA*1e6/10e3*2 #power defined @ 25% speed. At 100% speed max power doubles
+k = storage_energy_rating*baseMVA*1e6/(10e3)^2
 
 println("Energy Storage Rating set to $(storage_energy_rating) MWh")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
@@ -46,9 +52,9 @@ for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
     mp_data["nw"][string(t)]["storage"][string(e)]["energy"] = storage_energy
 end
 
-println("Energy Storage Minimum SoC set to $(storage_energy_min) MWh")
+println("Energy Storage Minimum SoC set to $(storage_energy_min*100) %")
 for t in keys(mp_data["nw"]), e in keys(mp_data["nw"][string(t)]["storage"])
-    mp_data["nw"][string(t)]["storage"][string(e)]["energy_min"] = storage_energy_min*storage_energy
+    mp_data["nw"][string(t)]["storage"][string(e)]["energy_min"] = storage_energy_min*storage_energy_rating
 end
 
 println("Energy Power Rating set to $(storage_power_rating) MW")
@@ -161,9 +167,8 @@ end
 ####################
 println("Making plots...")
 baseMVA = mp_data["baseMVA"]
-
 plotGeneration(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
 plotSoC(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
 plotStoragePower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
-plotBTEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street Full ACOPF",baseMVA, timesteps)
-plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)
+plotFWEnergyPower(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF", k, T, baseMVA, timesteps)
+#plotDemand(solved, string(output_path,"PS_AC"), "Pecan Street ACOPF",baseMVA, timesteps)

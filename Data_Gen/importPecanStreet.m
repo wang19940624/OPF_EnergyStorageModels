@@ -7,14 +7,14 @@ clear all
 base_model  = case_ieee123();
 
 % load data
-load_fn = 'dataport-export-large.csv';
+load_fn = 'dataport-export-wednesday.csv';
 
 % output file name
 folder = 'Output_Model/';
 fname = 'case_ieee123_storage_';
 
 % number of periods
-steps = 1000; %determined by min of this or pecan street data
+steps = 1440; %determined by min of this or pecan street data
 
 % storage elements
 storageElements = 1;
@@ -97,10 +97,11 @@ branches = zeros(size(loads,2),13);
 for i = 1:size(loads,2)
    branches(i,:) = branch;
    if  i==1
-       branches(i,1) = size(loads,2);
-       branches(i,2) = 1;
+       %branches(i,1) = size(loads,2);
+       %branches(i,2) = 1;
    elseif i == round(size(loads,2)/2)
-       branches(i,1) = size(loads,2);
+       %branches(i,1) = size(loads,2);
+       branches(i,1) = 1;
        branches(i,2) = i;
    else
        branches(i,1) = i-1;
@@ -118,11 +119,11 @@ end
 
  for i =1:periods
       modifier.period(i).gen = gen;
-     if  i==1
-        modifier.period(i).gen(:,2) = sum(loads(1,:));
-     else
+     %if  i==1
+        modifier.period(i).gen(:,2) = sum(loads(i,:));
+     %else
      modifier.period(i).gen(:,17) = 10;
-     end
+     %end
  end
  
  for i =1:periods
@@ -157,12 +158,12 @@ for i=1:periods
     storage(1) ="     %% storage data";
     storage(2) =" % hours;";
     storage(3) ="mpc.time_elapsed = 0.0167";
-    storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
-    storage(5) ="mpc.storage = [";
-    % Flywheel
-    storage(6) ="	 5            0.05     0.1          1             1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
-    %
-    storage(7) ="];";
+%     storage(4) ="%   storage_bus  energy  energy_rating charge_rating  discharge_rating  charge_efficiency  discharge_efficiency  thermal_rating  qmin  qmax  r  x  standby_loss  status";
+%     storage(5) ="mpc.storage = [";
+%     % Flywheel
+%     storage(6) ="	 5            0.05     0.1          1             1                 0.9                0.9                   100.0        -50.0 70.0  0.1 0.0	0.05         1;";
+%     %
+%     storage(7) ="];";
 
     fid = fopen(strcat(output,".m"), 'at');
     for k =1:length(storage)
