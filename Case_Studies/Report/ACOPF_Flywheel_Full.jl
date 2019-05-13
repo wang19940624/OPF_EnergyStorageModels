@@ -106,7 +106,8 @@ solved = PowerModels.build_ref(mp_data)
 ## - Cost of Generation ##
 ## - Charge Cycles      ##
 ##########################
-total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+#total_gen_cost = sum(gen_cost[t][i] for t in keys(gen_cost) for i in keys(gen_cost[t]))
+total_gen_cost = sum(gen_cost[t][i] for t=1:length(keys(gen_cost))-horizon for i in keys(gen_cost[t]))
 
 t_start = minimum(collect(keys(solved[:nw])))
 timesteps=length(collect(keys(solved[:nw]))) - horizon
